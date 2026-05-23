@@ -1,0 +1,268 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// DealGhost — Prisma Schema
+// Stack: Prisma 7 · PostgreSQL (Supabase) · Next.js App Router
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // All URLs configured in prisma.config.ts (Prisma 7 requirement).
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Tracks where a lead is in the pre-sales pipeline.
+enum LeadStatus {
+  NEW          // Just came in, no conversation yet
+  ACTIVE       // Currently in conversation
+  QUALIFIED    // Enough info gathered, ready for proposal
+  DISQUALIFIED // Not a good fit (budget, scope, etc.)
+  CONVERTED    // Accepted a proposal
+}
+
+/// Tracks the lifecycle of a single chat session.
+enum ConversationStatus {
+  ACTIVE     // Ongoing
+  COMPLETED  // Reached a natural end (proposal generated or lead disqualified)
+  ABANDONED  // Lead dropped off mid-conversation
+}
+
+/// Mirrors the Groq / LLM message roles.
+enum MessageRole {
+  USER       // Human message
+  ASSISTANT  // AI response
+  SYSTEM     // Hidden prompt / context injection
+}
+
+/// Proposal lifecycle.
+enum ProposalStatus {
+  DRAFT      // Being generated or not yet sent
+  SENT       // Delivered to the lead
+  VIEWED     // Lead opened it
+  ACCEPTED   // Lead agreed to move forward
+  REJECTED   // Lead declined
+  EXPIRED    // Passed the expiry date without a decision
+}
+
+/// Rough complexity tier — used in both scoring and proposal pricing logic.
+enum ProjectComplexity {
+  SIMPLE      // Landing page, brochure site, basic CRUD
+  STANDARD    // Mid-size web app, integrations, auth
+  COMPLEX     // Multi-service, real-time, heavy business logic
+  ENTERPRISE  // Large-scale, compliance, custom infrastructure
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A prospect who has interacted with DealGhost.
+/// One Lead → many Conversations → many Proposals.
+model Lead {
+  id      String @id @default(cuid())
+
+  // ── Contact ──────────────────────────────────────────────────────────────
+  name    String
+  email   String  @unique
+  company String?
+  phone   String?
+  website String?
+
+  // ── Pipeline ─────────────────────────────────────────────────────────────
+  status LeadStatus @default(NEW)
+
+  /// Composite score 0–100 computed from:
+  /// budget fit, project clarity, timeline urgency, company size signal.
+  score  Int        @default(0)
+
+  // ── Acquisition ──────────────────────────────────────────────────────────
+  /// How the lead arrived. E.g. "website", "referral", "cold-email".
+  source String?
+
+  /// Flexible bag for UTM params, IP, country, referrer, etc.
+  /// Shape: { utmSource?, utmMedium?, utmCampaign?, country?, ip? }
+  metadata Json?
+
+  // ── Relations ─────────────────────────────────────────────────────────────
+  conversations Conversation[]
+  proposals     Proposal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([score])
+}
+
+/// A single chat session between a lead and the AI.
+/// One Conversation → many Messages + one ProjectAnalysis.
+model Conversation {
+  id     String             @id @default(cuid())
+  leadId String
+  lead   Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  status ConversationStatus @default(ACTIVE)
+
+  /// Optional session context.
+  /// Shape: { pageUrl?, userAgent?, startedAt?, referrer? }
+  context Json?
+
+  // ── Relations ─────────────────────────────────────────────────────────────
+  messages Message[]
+  analysis ProjectAnalysis?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+}
+
+/// A single turn in a conversation.
+/// Cheap to write, never updated — append-only log.
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  role    MessageRole
+  /// Full message text. Stored as TEXT, not VARCHAR, for long AI responses.
+  content String      @db.Text
+
+  /// Groq token count for this message — useful for cost tracking and
+  /// deciding when to compress/summarise the context window.
+  tokenCount Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  // Compound index so fetching ordered messages for a conversation is instant.
+  @@index([conversationId, createdAt])
+}
+
+/// The living ProjectRequirementState — extracted and updated after every
+/// AI turn. This is the analytical brain of DealGhost.
+/// One-to-one with Conversation; always upserted, never re-created.
+model ProjectAnalysis {
+  id             String       @id @default(cuid())
+  conversationId String       @unique
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // ── Structured State (JSON) ───────────────────────────────────────────────
+  /// The canonical ProjectRequirementState object. Updated after each turn.
+  /// Shape:
+  /// {
+  ///   projectType: "web_app" | "mobile_app" | "api" | "integration" | "redesign" | "other" | null,
+  ///   projectName: string | null,
+  ///   description:  string | null,
+  ///   features: Array<{ name: string, description: string, priority: "MUST"|"SHOULD"|"COULD" }>,
+  ///   integrations: string[],           // e.g. ["Stripe", "Salesforce"]
+  ///   targetUsers:  string | null,      // e.g. "SMB accounting teams"
+  ///   userScale:    string | null,      // e.g. "~500 DAU at launch"
+  ///   compliance:   string[],           // e.g. ["GDPR", "HIPAA"]
+  ///   constraints:  string | null       // hard technical or business constraints
+  /// }
+  requirements Json @default("{}")
+
+  /// Questions the AI still needs to ask, ordered by priority.
+  /// Shape: Array<{ field: string, question: string, priority: "HIGH"|"MEDIUM"|"LOW" }>
+  missingInfo Json @default("[]")
+
+  /// Client's tech preferences or existing stack constraints.
+  /// Shape: { frontend?: string, backend?: string, database?: string, hosting?: string, avoid?: string[] }
+  techStack Json @default("{}")
+
+  // ── Scalar Signals (queryable) ────────────────────────────────────────────
+  complexity ProjectComplexity?
+
+  /// 0–100: how complete our picture of the project is.
+  /// Drives the "keep asking" vs "generate proposal" decision.
+  completeness Int @default(0)
+
+  /// Budget range in USD. Null until the lead reveals one.
+  budgetMin Int?
+  budgetMax Int?
+
+  /// Estimated delivery in calendar weeks.
+  timelineMin Int?
+  timelineMax Int?
+
+  /// Inferred industry / vertical. E.g. "fintech", "healthtech", "e-commerce".
+  industry String?
+
+  /// 2–3 sentence AI-generated summary of the project, refreshed each turn.
+  summary String? @db.Text
+
+  // ── Relations ─────────────────────────────────────────────────────────────
+  proposals Proposal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([complexity])
+  @@index([completeness])
+}
+
+/// A generated proposal document tied to a Lead.
+/// Optionally traces back to the ProjectAnalysis it was generated from.
+model Proposal {
+  id         String          @id @default(cuid())
+  leadId     String
+  lead       Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  /// Which analysis snapshot was used to generate this proposal.
+  /// Nullable — allows manually created proposals outside the AI flow.
+  analysisId String?
+  analysis   ProjectAnalysis? @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+
+  status  ProposalStatus @default(DRAFT)
+
+  /// Incremented if the proposal is regenerated (e.g. after the lead
+  /// provides more info). Lets you show "Proposal v2" in the UI.
+  version Int            @default(1)
+
+  // ── Rich Content (JSON) ───────────────────────────────────────────────────
+  /// Full proposal document. All sections in one blob — easy to render,
+  /// easy to pass back to the LLM for regeneration.
+  /// Shape:
+  /// {
+  ///   executiveSummary: string,
+  ///   scope: { included: string[], excluded: string[] },
+  ///   deliverables: Array<{ name: string, description: string, milestone: string }>,
+  ///   timeline: { phases: Array<{ name: string, durationWeeks: number, deliverables: string[] }> },
+  ///   pricing: {
+  ///     model: "fixed" | "time_and_materials" | "retainer",
+  ///     breakdown: Array<{ item: string, costUsd: number }>,
+  ///     totalUsd: number,
+  ///     currency: string
+  ///   },
+  ///   techStack: { frontend: string, backend: string, database: string, hosting: string },
+  ///   team: Array<{ role: string, count: number, allocationPct: number }>,
+  ///   terms: string
+  /// }
+  content Json
+
+  /// Pulled out of content.pricing for fast queries (e.g. "show me all
+  /// proposals between $50k–$100k") without parsing the JSON blob.
+  totalMin Int?
+  totalMax Int?
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  sentAt      DateTime?
+  viewedAt    DateTime?
+  respondedAt DateTime?
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+  @@index([analysisId])
+}
