@@ -10,9 +10,18 @@ export function compactStateForPrompt(state: object): object {
     if (typeof value === 'string' && value.trim() === '') continue;
     if (Array.isArray(value)) {
       if (value.length === 0) continue;
-      result[key] = value.map((item) =>
-        item !== null && typeof item === 'object' ? compactStateForPrompt(item as object) : item
-      );
+      const compacted = value
+        .map((item) =>
+          item !== null && typeof item === 'object' ? compactStateForPrompt(item as object) : item
+        )
+        .filter(
+          (item) =>
+            item !== null &&
+            item !== undefined &&
+            !(typeof item === 'string' && item.trim() === '')
+        );
+      if (compacted.length === 0) continue;
+      result[key] = compacted;
       continue;
     }
     if (typeof value === 'object' && !Array.isArray(value)) {
