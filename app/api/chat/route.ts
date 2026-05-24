@@ -106,31 +106,33 @@ export async function POST(req: NextRequest) {
     ? (existingAnalysis.requirements as unknown as ProjectRequirementState)
     : emptyProjectRequirementState();
 
-  // ── AI pipeline — extraction + scoring run in parallel ───────────────────
-  const [extracted, leadScore] = await Promise.all([
-    extractRequirements(conversationHistory, currentState),
-    scoreLead(currentState),
-  ]);
+  // ── AI pipeline — extract first, then score + followup in parallel ────────
+  const extracted = await extractRequirements(conversationHistory, currentState);
 
   const merged = mergeState(currentState, extracted as Partial<ProjectRequirementState>);
   const missingInfo = detectMissingInfo(merged);
   const complexity = inferComplexity(merged);
   const completeness = calculateCompleteness(merged);
 
-  const updatedState: ProjectRequirementState = {
+  // Build intermediate state so scoreLead and followup both see current-turn data
+  const stateForScoring: ProjectRequirementState = {
     ...merged,
     inferredComplexity: complexity,
     completenessScore: completeness,
     missingInformation: missingInfo,
-    leadScore,
+    leadScore: currentState.leadScore, // preserve previous score temporarily
   };
 
-  // ── Follow-up question ───────────────────────────────────────────────────
-  const followupQuestion = await generateFollowupQuestion(
-    updatedState,
-    missingInfo,
-    conversationHistory,
-  );
+  // Now score + generate followup in parallel — both use the freshly-merged state
+  const [leadScore, followupQuestion] = await Promise.all([
+    scoreLead(stateForScoring),
+    generateFollowupQuestion(stateForScoring, missingInfo, conversationHistory),
+  ]);
+
+  const updatedState: ProjectRequirementState = {
+    ...stateForScoring,
+    leadScore,
+  };
 
   // ── Persist analysis ─────────────────────────────────────────────────────
   const analysisPayload = {
