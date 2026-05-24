@@ -6,6 +6,11 @@ import { IntelligencePanel } from '@/components/intelligence-panel';
 import { ProposalView } from '@/components/proposal-view';
 import { ProjectRequirementState } from '@/types/project';
 import { ProposalContent } from '@/types/proposal';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable';
 
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -13,9 +18,10 @@ export default function Home() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [projectState, setProjectState] = useState<ProjectRequirementState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
   const [proposal, setProposal] = useState<ProposalContent | null>(null);
   const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
+  // isPanelOpen controls whether the intelligence panel is visible
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
@@ -83,6 +89,8 @@ export default function Home() {
       }
 
       setProposal(data.proposal);
+      // Auto-open the panel so the proposal is immediately visible
+      setIsPanelOpen(true);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -94,19 +102,19 @@ export default function Home() {
   }, [conversationId, isGeneratingProposal]);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-[#0d1117]">
       {/* Top Nav */}
-      <nav className="h-12 bg-white border-b border-zinc-200 flex items-center justify-between px-6 flex-shrink-0">
+      <nav className="h-12 bg-[#0d1117] border-b border-[#1f2d3d] flex items-center justify-between px-6 flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-base">👻</span>
-          <span className="text-sm font-bold text-zinc-900 tracking-tight">DealGhost</span>
-          <span className="hidden sm:block text-[10px] font-medium text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100">
+          <span className="text-sm font-bold text-slate-100 tracking-tight">DealGhost</span>
+          <span className="hidden sm:block text-[10px] font-medium text-blue-400 bg-blue-950/50 px-2 py-0.5 rounded-full border border-blue-900">
             AI Pre-Sales Intelligence
           </span>
         </div>
         <div className="flex items-center gap-3">
           {projectState && (
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-zinc-500">
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-500">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Pipeline active
             </div>
@@ -119,8 +127,9 @@ export default function Home() {
                 setProjectState(null);
                 setProposal(null);
                 setInput('');
+                setIsPanelOpen(false);
               }}
-              className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
             >
               New session
             </button>
@@ -128,35 +137,50 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Workspace */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left — Chat */}
-        <div className="w-[45%] flex-shrink-0 overflow-hidden">
+      {/*
+        ResizablePanelGroup replaces the old hard-coded flex split.
+        key={String(isPanelOpen)} forces re-mount on toggle so panel sizes reset cleanly.
+      */}
+      <ResizablePanelGroup
+        key={String(isPanelOpen)}
+        orientation="horizontal"
+        className="flex-1 overflow-hidden"
+      >
+        <ResizablePanel defaultSize={isPanelOpen ? 60 : 100} minSize={35}>
           <ChatPanel
             messages={messages}
             input={input}
             isLoading={isLoading}
             completeness={projectState?.completenessScore ?? 0}
+            isPanelOpen={isPanelOpen}
             onInputChange={setInput}
             onSend={sendMessage}
+            onTogglePanel={() => setIsPanelOpen((v) => !v)}
             onGenerateProposal={generateProposal}
             isGeneratingProposal={isGeneratingProposal}
           />
-        </div>
+        </ResizablePanel>
 
-        {/* Right — Intelligence / Proposal */}
-        <div className="flex-1 overflow-hidden border-l border-zinc-200">
-          {proposal ? (
-            <ProposalView
-              proposal={proposal}
-              projectName={projectState?.projectName}
-              onClose={() => setProposal(null)}
+        {isPanelOpen && (
+          <>
+            <ResizableHandle
+              withHandle
+              className="bg-[#1f2d3d] w-px hover:bg-blue-600 transition-colors"
             />
-          ) : (
-            <IntelligencePanel state={projectState} />
-          )}
-        </div>
-      </div>
+            <ResizablePanel defaultSize={40} minSize={25}>
+              {proposal ? (
+                <ProposalView
+                  proposal={proposal}
+                  projectName={projectState?.projectName}
+                  onClose={() => setProposal(null)}
+                />
+              ) : (
+                <IntelligencePanel state={projectState} />
+              )}
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
     </div>
   );
 }
