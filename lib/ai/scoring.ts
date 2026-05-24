@@ -17,7 +17,7 @@ const LeadScoreSchema = z.object({
 
 export async function scoreLead(state: ProjectRequirementState): Promise<LeadScore> {
   const userPrompt = buildScoringUserPrompt(state);
-  const raw = await callGroq(SCORING_SYSTEM_PROMPT, userPrompt);
+  const raw = await callGroq(SCORING_SYSTEM_PROMPT, userPrompt, true);
 
   let parsed: unknown;
   try {

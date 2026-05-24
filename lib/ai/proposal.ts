@@ -49,7 +49,7 @@ export type ProposalContent = z.infer<typeof ProposalSchema>;
 
 export async function generateProposal(state: ProjectRequirementState): Promise<ProposalContent> {
   const userPrompt = buildProposalUserPrompt(state);
-  const raw = await callGroq(PROPOSAL_SYSTEM_PROMPT, userPrompt);
+  const raw = await callGroq(PROPOSAL_SYSTEM_PROMPT, userPrompt, true);
 
   let parsed: unknown;
   try {

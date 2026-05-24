@@ -48,7 +48,7 @@ export async function extractRequirements(
   currentState: ProjectRequirementState,
 ): Promise<ExtractionResult> {
   const userPrompt = buildExtractionUserPrompt(conversationHistory, currentState);
-  const raw = await callGroq(EXTRACTION_SYSTEM_PROMPT, userPrompt);
+  const raw = await callGroq(EXTRACTION_SYSTEM_PROMPT, userPrompt, true);
 
   let parsed: unknown;
   try {
