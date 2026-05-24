@@ -48,7 +48,15 @@ function compactState(state: object): object {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(state)) {
     if (value === null || value === undefined) continue;
-    if (Array.isArray(value) && value.length === 0) continue;
+    if (typeof value === 'string' && value.trim() === '') continue;
+    if (Array.isArray(value)) {
+      if (value.length === 0) continue;
+      // Recursively compact object items within arrays
+      result[key] = value.map((item) =>
+        item !== null && typeof item === 'object' ? compactState(item as object) : item
+      );
+      continue;
+    }
     if (typeof value === 'object' && !Array.isArray(value)) {
       const nested = compactState(value as object);
       if (Object.keys(nested).length === 0) continue;
@@ -64,7 +72,14 @@ export function buildExtractionUserPrompt(
   conversationHistory: Array<{ role: string; content: string }>,
   currentState: object,
 ): string {
-  const compact = compactState(currentState);
+  const compact = compactState(currentState) as Record<string, unknown>;
+  // Remove budget sentinel: if budgetRange only contains the default currency with no real data, strip it
+  if (compact['budgetRange'] && typeof compact['budgetRange'] === 'object') {
+    const br = compact['budgetRange'] as Record<string, unknown>;
+    if (Object.keys(br).length === 1 && 'currency' in br) {
+      delete compact['budgetRange'];
+    }
+  }
   const stateSection =
     Object.keys(compact).length > 0
       ? `CURRENT PROJECT STATE (already known — only add new/updated info):\n${JSON.stringify(compact, null, 2)}`
