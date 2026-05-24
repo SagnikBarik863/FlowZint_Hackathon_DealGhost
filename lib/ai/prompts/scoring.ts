@@ -33,8 +33,40 @@ Return ONLY valid JSON in this exact format:
 }`;
 
 export function buildScoringUserPrompt(currentState: object): string {
+  const compact = compactStateForPrompt(currentState) as Record<string, unknown>;
+  // Remove budget sentinel
+  if (compact['budgetRange'] && typeof compact['budgetRange'] === 'object') {
+    const br = compact['budgetRange'] as Record<string, unknown>;
+    if (Object.keys(br).length === 1 && 'currency' in br) {
+      delete compact['budgetRange'];
+    }
+  }
   return `PROJECT REQUIREMENT STATE:
-${JSON.stringify(currentState, null, 2)}
+${JSON.stringify(compact, null, 2)}
 
 Score this lead.`;
+}
+
+/** Strip null, undefined, empty arrays, and empty objects from state before sending to AI */
+function compactStateForPrompt(state: object): object {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (value === null || value === undefined) continue;
+    if (typeof value === 'string' && value.trim() === '') continue;
+    if (Array.isArray(value)) {
+      if (value.length === 0) continue;
+      result[key] = value.map((item) =>
+        item !== null && typeof item === 'object' ? compactStateForPrompt(item as object) : item
+      );
+      continue;
+    }
+    if (typeof value === 'object') {
+      const nested = compactStateForPrompt(value as object);
+      if (Object.keys(nested).length === 0) continue;
+      result[key] = nested;
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
 }

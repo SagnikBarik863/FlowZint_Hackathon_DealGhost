@@ -35,7 +35,7 @@ export function buildFollowupUserPrompt(
   conversationHistory: Array<{ role: string; content: string }>,
 ): string {
   return `CURRENT PROJECT STATE:
-${JSON.stringify(currentState, null, 2)}
+${JSON.stringify(compactStateForPrompt(currentState), null, 2)}
 
 MISSING INFORMATION (priority ordered):
 ${missingFields.map((f) => `- ${f.field} [${f.priority}]`).join('\n')}
@@ -44,4 +44,28 @@ RECENT CONVERSATION:
 ${conversationHistory.slice(-6).map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n')}
 
 Generate the single most important follow-up question to ask next.`;
+}
+
+/** Strip null, undefined, empty arrays, and empty objects from state before sending to AI */
+function compactStateForPrompt(state: object): object {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (value === null || value === undefined) continue;
+    if (typeof value === 'string' && value.trim() === '') continue;
+    if (Array.isArray(value)) {
+      if (value.length === 0) continue;
+      result[key] = value.map((item) =>
+        item !== null && typeof item === 'object' ? compactStateForPrompt(item as object) : item
+      );
+      continue;
+    }
+    if (typeof value === 'object') {
+      const nested = compactStateForPrompt(value as object);
+      if (Object.keys(nested).length === 0) continue;
+      result[key] = nested;
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
 }
