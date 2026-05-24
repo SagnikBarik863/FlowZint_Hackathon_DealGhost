@@ -1,3 +1,5 @@
+import { compactStateForPrompt } from './utils';
+
 export const SCORING_SYSTEM_PROMPT = `You are a pre-sales analyst evaluating software project leads for a software agency.
 
 Your job is to score a lead based on their project requirements and conversation quality.
@@ -47,26 +49,3 @@ ${JSON.stringify(compact, null, 2)}
 Score this lead.`;
 }
 
-/** Strip null, undefined, empty arrays, and empty objects from state before sending to AI */
-function compactStateForPrompt(state: object): object {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(state)) {
-    if (value === null || value === undefined) continue;
-    if (typeof value === 'string' && value.trim() === '') continue;
-    if (Array.isArray(value)) {
-      if (value.length === 0) continue;
-      result[key] = value.map((item) =>
-        item !== null && typeof item === 'object' ? compactStateForPrompt(item as object) : item
-      );
-      continue;
-    }
-    if (typeof value === 'object') {
-      const nested = compactStateForPrompt(value as object);
-      if (Object.keys(nested).length === 0) continue;
-      result[key] = nested;
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}

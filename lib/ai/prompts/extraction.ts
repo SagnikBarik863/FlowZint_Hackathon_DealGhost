@@ -1,3 +1,5 @@
+import { compactStateForPrompt } from './utils';
+
 export const EXTRACTION_SYSTEM_PROMPT = `You are a senior solution architect extracting project requirements from a client discovery conversation.
 
 Your job: extract AND intelligently infer structured requirements from everything the client has said.
@@ -43,36 +45,11 @@ Rules:
 - budgetRange.raw = exact phrase client used (e.g. "around 50k")
 - Be generous with inference — a partially correct extraction is far better than an empty one`;
 
-/** Remove null, undefined, and empty-array/empty-object values from state before serialising */
-function compactState(state: object): object {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(state)) {
-    if (value === null || value === undefined) continue;
-    if (typeof value === 'string' && value.trim() === '') continue;
-    if (Array.isArray(value)) {
-      if (value.length === 0) continue;
-      // Recursively compact object items within arrays
-      result[key] = value.map((item) =>
-        item !== null && typeof item === 'object' ? compactState(item as object) : item
-      );
-      continue;
-    }
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      const nested = compactState(value as object);
-      if (Object.keys(nested).length === 0) continue;
-      result[key] = nested;
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
-
 export function buildExtractionUserPrompt(
   conversationHistory: Array<{ role: string; content: string }>,
   currentState: object,
 ): string {
-  const compact = compactState(currentState) as Record<string, unknown>;
+  const compact = compactStateForPrompt(currentState) as Record<string, unknown>;
   // Remove budget sentinel: if budgetRange only contains the default currency with no real data, strip it
   if (compact['budgetRange'] && typeof compact['budgetRange'] === 'object') {
     const br = compact['budgetRange'] as Record<string, unknown>;
