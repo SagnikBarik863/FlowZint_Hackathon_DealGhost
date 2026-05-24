@@ -120,7 +120,6 @@ export async function POST(req: NextRequest) {
     inferredComplexity: complexity,
     completenessScore: completeness,
     missingInformation: missingInfo,
-    leadScore: currentState.leadScore, // preserve previous score temporarily
   };
 
   // Now score + generate followup in parallel — both use the freshly-merged state
