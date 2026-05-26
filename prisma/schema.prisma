@@ -199,6 +199,30 @@ model ProjectAnalysis {
   /// 2–3 sentence AI-generated summary of the project, refreshed each turn.
   summary String? @db.Text
 
+  // ── Intelligence fields (added in intelligence rebuild) ──────────────────────
+  /// Rolling conversation summary for memory compression (replaces raw history in prompts).
+  conversationSummary String?  @db.Text
+  /// Per-field confidence scores from L1. Shape: { budget: 0.8, timeline: 0.4, ... }
+  fieldConfidence     Json     @default("{}")
+  /// Confirmed facts from this conversation. Shape: Array<{ field: string, value: string, turnConfirmed: number }>
+  confirmedFacts      Json     @default("[]")
+  /// AI assumptions (not user-stated). Shape: Array<{ assumption: string, basis: string }>
+  assumptions         Json     @default("[]")
+  /// User contradictions detected. Shape: Array<{ field: string, old: string, new: string, turn: number }>
+  contradictions      Json     @default("[]")
+  /// Still-ambiguous areas needing clarification. Shape: Array<{ field: string, reason: string }>
+  ambiguities         Json     @default("[]")
+  /// L4 discovery targets — what to ask next. Shape: Array<{ id: string, question: string, category: string, priority: number }>
+  discoveryTargets    Json     @default("[]")
+  /// Technical risks surfaced by L4. Shape: Array<{ risk: string, severity: "LOW"|"MEDIUM"|"HIGH", mitigation?: string }>
+  technicalRisks      Json     @default("[]")
+  /// Key user workflows described. Shape: Array<{ name: string, steps: string[] }>
+  workflows           Json     @default("[]")
+  /// User roles / personas identified. Shape: Array<{ role: string, permissions?: string[] }>
+  userRoles           Json     @default("[]")
+  /// High-value discoveries from L4 that aren't captured elsewhere. Shape: Array<string>
+  keyDiscoveries      Json     @default("[]")
+
   // ── Relations ─────────────────────────────────────────────────────────────
   proposals Proposal[]
 
@@ -207,6 +231,26 @@ model ProjectAnalysis {
 
   @@index([complexity])
   @@index([completeness])
+}
+
+/// Canonical software capability graph — 68 pre-seeded entries covering common project types.
+/// Claude maps raw feature text to canonical IDs during L2 extraction.
+model FeatureOntology {
+  id                 String   @id              // 'realtime_delivery_tracking'
+  canonicalName      String                    // 'Real-time Delivery Tracking'
+  category           String                    // 'auth' | 'payments' | 'tracking' | ...
+  description        String?  @db.Text         // one-sentence capability description
+  aliases            String[]                  // ['live tracking', 'gps tracking', ...]
+  typicalComplexity  String?                   // 'LOW' | 'MEDIUM' | 'HIGH'
+  typicalHoursMin    Int?
+  typicalHoursMax    Int?
+  dependencies       String[] @default([])     // canonical IDs this feature requires
+  incompatibleWith   String[] @default([])
+  relatedFeatures    String[] @default([])     // commonly appear alongside (not required)
+  commonProjectTypes String[] @default([])     // project types that typically need this
+  createdAt          DateTime @default(now())
+
+  @@map("feature_ontology")
 }
 
 /// A generated proposal document tied to a Lead.
