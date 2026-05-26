@@ -1,56 +1,39 @@
-import Groq from 'groq-sdk';
+import Groq from 'groq-sdk'
 
-let _client: Groq | null = null;
-
-function getClient(): Groq {
-  if (!_client) {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error('GROQ_API_KEY is not set');
-    _client = new Groq({ apiKey });
-  }
-  return _client;
-}
-
-export interface GroqMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export interface GroqOptions {
-  model: string;
-  messages: GroqMessage[];
-  maxTokens?: number;
-  temperature?: number;
-}
-
-export interface GroqResponse {
-  content: string;
-  inputTokens: number;
-  outputTokens: number;
-  model: string;
-}
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 /**
- * Call Groq (used for fast/cheap tasks where Groq models are preferred).
- * Currently not used in the main pipeline but available for future use.
+ * Groq is used ONLY for intent classification (pre-flight).
+ * Fast (~300ms), cheap (free tier), outputs a single label.
  */
-export async function callGroq(opts: GroqOptions): Promise<GroqResponse> {
-  const client = getClient();
+export const GROQ_INTENT_MODEL = 'llama-3.1-8b-instant'
 
+export async function callGroqIntent(userMessage: string, recentHistory: string): Promise<string> {
   const response = await client.chat.completions.create({
-    model: opts.model,
-    messages: opts.messages,
-    max_tokens: opts.maxTokens ?? 1024,
-    temperature: opts.temperature ?? 0,
-  });
+    model: GROQ_INTENT_MODEL,
+    temperature: 0,
+    max_tokens: 20,
+    messages: [
+      {
+        role: 'system',
+        content: `You are an intent classifier. Given a client message in a pre-sales discovery conversation, return EXACTLY one of these labels with no other text:
 
-  const content = response.choices[0]?.message?.content ?? '';
-  const usage = response.usage;
+COLLECTING_INFO     — client is describing their project, adding requirements, answering questions
+REQUESTING_DONE     — client wants to finish the conversation, see a summary, or wrap up
+CONFIRMING_SUMMARY  — client is confirming or agreeing with a summary that was shown
+EDITING_SUMMARY     — client is correcting or modifying something in a summary
+READY_FOR_PROPOSAL  — client is explicitly asking for a proposal or pricing
 
-  return {
-    content,
-    inputTokens: usage?.prompt_tokens ?? 0,
-    outputTokens: usage?.completion_tokens ?? 0,
-    model: response.model,
-  };
+Return only the label. No explanation. No punctuation.`,
+      },
+      {
+        role: 'user',
+        content: `Recent conversation:\n${recentHistory}\n\nLatest message: "${userMessage}"`,
+      },
+    ],
+  })
+
+  const text = response.choices[0]?.message?.content?.trim() ?? 'COLLECTING_INFO'
+  const valid = ['COLLECTING_INFO', 'REQUESTING_DONE', 'CONFIRMING_SUMMARY', 'EDITING_SUMMARY', 'READY_FOR_PROPOSAL']
+  return valid.includes(text) ? text : 'COLLECTING_INFO'
 }

@@ -52,3 +52,22 @@ export async function redisDel(key: string): Promise<void> {
   const redis = getRedis();
   await redis.del(`dealghost:${key}`);
 }
+
+// ── Typed state helpers ────────────────────────────────────────────────────
+
+import type { ProjectRequirementState } from '@dealghost/shared';
+
+/**
+ * Load a ProjectRequirementState by conversationId.
+ * Returns null if no state is found (new conversation).
+ */
+export async function loadState(conversationId: string): Promise<ProjectRequirementState | null> {
+  return redisGet<ProjectRequirementState>(`state:${conversationId}`);
+}
+
+/**
+ * Persist a ProjectRequirementState by conversationId with 7-day TTL.
+ */
+export async function saveState(conversationId: string, state: ProjectRequirementState): Promise<void> {
+  await redisSet(`state:${conversationId}`, state);
+}

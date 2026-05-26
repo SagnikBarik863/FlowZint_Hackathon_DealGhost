@@ -1,17 +1,18 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
     coverage: {
       reporter: ['text', 'json'],
     },
   },
   resolve: {
     alias: {
-      '@dealghost/shared': '../shared/index.ts',
+      '@dealghost/shared': path.resolve(__dirname, '../shared/index.ts'),
     },
   },
 });
