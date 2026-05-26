@@ -37,10 +37,14 @@ chatRoute.post('/', async (c) => {
     isNewConversation = true
   }
 
-  // ── 2. Load state from Redis (or create empty state) ─────────────────────
+  // ── 2. Load state from Redis → Supabase fallback → empty ────────────────
   let state = await loadState(convId)
   if (!state) {
-    state = createEmptyState(convId)
+    // Redis miss (expired or first load) — try Supabase before creating blank
+    const saved = await prisma.projectAnalysis.findUnique({ where: { conversationId: convId } })
+    state = saved
+      ? (saved.requirements as unknown as ReturnType<typeof createEmptyState>)
+      : createEmptyState(convId)
   }
 
   // ── 3. Load recent messages from DB for context ───────────────────────────

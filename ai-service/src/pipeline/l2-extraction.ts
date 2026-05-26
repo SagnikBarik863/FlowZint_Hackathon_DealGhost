@@ -42,10 +42,10 @@ const ExtractionResultSchema = z.object({
     .default(null),
   clientTechPreferences: z
     .object({
-      frontend: z.string().optional(),
-      backend: z.string().optional(),
-      database: z.string().optional(),
-      hosting: z.string().optional(),
+      frontend: z.string().nullish(),
+      backend: z.string().nullish(),
+      database: z.string().nullish(),
+      hosting: z.string().nullish(),
       avoid: z.array(z.string()).default([]),
       existingSystems: z.array(z.string()).default([]),
     })
