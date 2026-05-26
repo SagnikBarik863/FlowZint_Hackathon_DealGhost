@@ -1,0 +1,167 @@
+<h2>Full Page Layout — DealGhost Workspace</h2>
+<p class="subtitle">Left: customer chat. Right: tabbed intelligence panel with decorated cards. Does this feel right?</p>
+
+<div class="mockup">
+  <div class="mockup-header">🖥 /chat — with intelligence panel open</div>
+  <div class="mockup-body" style="padding:0;overflow:hidden;">
+
+    <div style="display:flex;height:520px;font-family:'Segoe UI',sans-serif;font-size:12px;background:#0d1117;">
+
+      <!-- LEFT: Chat -->
+      <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid #1f2d3d;min-width:0;">
+
+        <!-- Chat header -->
+        <div style="padding:14px 18px;border-bottom:1px solid #1f2d3d;display:flex;align-items:center;justify-content:space-between;background:#0d1117;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:28px;height:28px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:bold">D</div>
+            <div>
+              <div style="color:#e2e8f0;font-weight:600;font-size:13px">DealGhost</div>
+              <div style="color:#4ade80;font-size:10px;display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block"></span>Solution Architect · Online</div>
+            </div>
+          </div>
+          <!-- Toggle button -->
+          <button style="background:linear-gradient(135deg,#1e3a8a,#2563eb);border:1px solid #3b82f6;border-radius:20px;padding:6px 14px;color:#93c5fd;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <span>👁</span> View Intelligence
+          </button>
+        </div>
+
+        <!-- Chat messages -->
+        <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#0d1117;">
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="background:#1e3a5e;border:1px solid #1e4d8c;border-radius:12px 12px 2px 12px;padding:9px 14px;color:#e2e8f0;max-width:75%;line-height:1.5">I want to build a food delivery app</div>
+          </div>
+          <div style="display:flex;justify-content:flex-start;gap:8px;align-items:flex-end;">
+            <div style="width:24px;height:24px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px">D</div>
+            <div style="background:#111827;border:1px solid #1f2d3d;border-radius:12px 12px 12px 2px;padding:9px 14px;color:#94a3b8;max-width:75%;line-height:1.5">Interesting! To give you accurate scope and cost estimates, I need to understand the platform. Are you targeting iOS, Android, or both — and would you need a web version for restaurant owners?</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="background:#1e3a5e;border:1px solid #1e4d8c;border-radius:12px 12px 2px 12px;padding:9px 14px;color:#e2e8f0;max-width:75%;line-height:1.5">iOS and Android. Budget is around $20k and I need it done in 3 months.</div>
+          </div>
+          <div style="display:flex;justify-content:flex-start;gap:8px;align-items:flex-end;">
+            <div style="width:24px;height:24px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px">D</div>
+            <div style="background:#111827;border:1px solid #1f2d3d;border-radius:12px 12px 12px 2px;padding:9px 14px;color:#94a3b8;max-width:75%;line-height:1.5">Got it. Will you need real-time order tracking, and do you already have a payment gateway in mind — or should we factor that into the architecture?</div>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div style="padding:12px 16px;border-top:1px solid #1f2d3d;background:#0d1117;display:flex;gap:10px;align-items:center;">
+          <div style="flex:1;background:#111827;border:1px solid #1f2d3d;border-radius:8px;padding:10px 14px;color:#6b7280;font-size:12px;">Describe your project...</div>
+          <button style="background:#2563eb;border:none;border-radius:8px;width:36px;height:36px;color:#fff;font-size:14px;cursor:pointer;flex-shrink:0;">↑</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: Intelligence Panel -->
+      <div style="width:340px;flex-shrink:0;display:flex;flex-direction:column;background:#0a0f1a;overflow:hidden;">
+
+        <!-- Panel header -->
+        <div style="padding:14px 16px;border-bottom:1px solid #1f2d3d;background:#0d1117;display:flex;align-items:center;justify-content:space-between;">
+          <div style="color:#3b82f6;font-size:11px;font-weight:700;letter-spacing:0.5px;">⚡ LIVE INTELLIGENCE</div>
+          <div style="color:#6b7280;font-size:10px;cursor:pointer">✕</div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display:flex;border-bottom:1px solid #1f2d3d;background:#0d1117;">
+          <div style="flex:1;text-align:center;padding:8px 4px;color:#3b82f6;border-bottom:2px solid #3b82f6;font-size:11px;font-weight:600;">Overview</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;color:#6b7280;font-size:11px;">Features</div>
+          <div style="flex:1;text-align:center;padding:8px 4px;color:#6b7280;font-size:11px;">Proposal</div>
+        </div>
+
+        <!-- Panel content (scrollable) -->
+        <div style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;">
+
+          <!-- Lead Score Card -->
+          <div style="background:#0f1f0f;border:1px solid #166534;border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="color:#6b7280;font-size:9px;letter-spacing:1px;margin-bottom:2px">LEAD SCORE</div>
+              <div style="color:#4ade80;font-size:28px;font-weight:700;line-height:1">72</div>
+              <div style="background:#14532d;border:1px solid #166534;border-radius:10px;padding:2px 8px;color:#4ade80;font-size:9px;display:inline-block;margin-top:4px">High Intent</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="color:#6b7280;font-size:9px;letter-spacing:1px;margin-bottom:2px">COMPLEXITY</div>
+              <div style="color:#f59e0b;font-size:16px;font-weight:700">MEDIUM</div>
+              <div style="margin-top:6px">
+                <div style="color:#6b7280;font-size:9px;margin-bottom:2px">Completeness</div>
+                <div style="background:#1f2d3d;border-radius:4px;height:5px;width:80px;overflow:hidden;">
+                  <div style="background:linear-gradient(90deg,#3b82f6,#4ade80);height:100%;width:68%"></div>
+                </div>
+                <div style="color:#94a3b8;font-size:9px;text-align:right;margin-top:1px">68%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Project Details Card -->
+          <div style="background:#111827;border:1px solid #1f2d3d;border-radius:10px;padding:12px;">
+            <div style="color:#94a3b8;font-size:9px;letter-spacing:1px;margin-bottom:8px;font-weight:600;">PROJECT DETAILS</div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:#6b7280;font-size:10px;">Type</span>
+                <span style="background:#1e3a5e;border:1px solid #1e4d8c;border-radius:4px;padding:2px 8px;color:#93c5fd;font-size:10px;">Food Delivery</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:#6b7280;font-size:10px;">Platforms</span>
+                <div style="display:flex;gap:4px;">
+                  <span style="background:#1f2d3d;border:1px solid #374151;border-radius:4px;padding:2px 7px;color:#e2e8f0;font-size:10px;">iOS</span>
+                  <span style="background:#1f2d3d;border:1px solid #374151;border-radius:4px;padding:2px 7px;color:#e2e8f0;font-size:10px;">Android</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:#6b7280;font-size:10px;">Target Users</span>
+                <span style="color:#e2e8f0;font-size:10px;">~10k launch</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Budget & Timeline Card -->
+          <div style="background:#111827;border:1px solid #1f2d3d;border-radius:10px;padding:12px;">
+            <div style="color:#94a3b8;font-size:9px;letter-spacing:1px;margin-bottom:8px;font-weight:600;">QUALIFICATION</div>
+            <div style="display:flex;gap:8px;">
+              <div style="flex:1;background:#0f2a1a;border:1px solid #166534;border-radius:8px;padding:8px;text-align:center;">
+                <div style="color:#6b7280;font-size:8px;margin-bottom:3px">BUDGET</div>
+                <div style="color:#4ade80;font-size:12px;font-weight:700">$15k–$30k</div>
+              </div>
+              <div style="flex:1;background:#1a1f0f;border:1px solid #3a5a0d;border-radius:8px;padding:8px;text-align:center;">
+                <div style="color:#6b7280;font-size:8px;margin-bottom:3px">TIMELINE</div>
+                <div style="color:#a3e635;font-size:12px;font-weight:700">3–4 mo</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Missing Info Card -->
+          <div style="background:#1a0f0f;border:1px solid #7f1d1d;border-radius:10px;padding:12px;">
+            <div style="color:#f87171;font-size:9px;letter-spacing:1px;margin-bottom:8px;font-weight:600;">⚠ MISSING INFORMATION</div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="color:#ef4444;font-size:10px;">•</span>
+                <span style="color:#fca5a5;font-size:10px;">Payment gateway preference</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="color:#ef4444;font-size:10px;">•</span>
+                <span style="color:#fca5a5;font-size:10px;">Real-time order tracking needed?</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="color:#ef4444;font-size:10px;">•</span>
+                <span style="color:#fca5a5;font-size:10px;">Admin panel for restaurant owners?</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top:16px;text-align:center;">
+  <p class="subtitle">Does this overall layout feel right? Click below to confirm or suggest changes.</p>
+  <div class="options" style="max-width:500px;margin:0 auto;">
+    <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+      <div class="letter">✓</div>
+      <div class="content"><h3>Looks good — proceed to spec</h3><p>Write the design doc and move to implementation planning</p></div>
+    </div>
+    <div class="option" data-choice="changes" onclick="toggleSelect(this)">
+      <div class="letter">✎</div>
+      <div class="content"><h3>I want changes</h3><p>Tell me what to adjust</p></div>
+    </div>
+  </div>
+</div>

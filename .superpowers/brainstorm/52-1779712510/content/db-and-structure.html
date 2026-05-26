@@ -1,0 +1,170 @@
+<h2>Section 4 — Database Changes + Project File Structure</h2>
+<p class="subtitle">What changes in Supabase, and how the codebase gets reorganised</p>
+
+<!-- Monorepo layout -->
+<div style="font-family:monospace; font-size:12px; background:#0d1117; color:#e6edf3; border-radius:12px; padding:24px 28px; margin-bottom:20px; border:1px solid #30363d; line-height:1.9;">
+
+  <div style="color:#58a6ff; font-weight:bold; margin-bottom:14px; font-size:13px;">Project Layout &nbsp;<span style="color:#6b7280; font-weight:normal;">— two services, one repo</span></div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px;">
+
+    <!-- Frontend -->
+    <div>
+      <div style="color:#7ee787; margin-bottom:8px;">frontend/ &nbsp;<span style="color:#6b7280; font-weight:normal; font-size:11px;">→ Vercel (free)</span></div>
+      <div style="color:#8b949e; padding-left:12px;">
+        app/<br/>
+        <span style="padding-left:12px;">api/proxy/chat/route.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← thin proxy</span></span><br/>
+        <span style="padding-left:12px;">api/proxy/proposal/route.ts</span><br/>
+        <span style="padding-left:12px;">(page).tsx &nbsp;<span style="color:#6b7280; font-size:10px;">← chat UI</span></span><br/>
+        components/<br/>
+        <span style="padding-left:12px;">chat-panel.tsx</span><br/>
+        <span style="padding-left:12px;">intelligence-panel.tsx &nbsp;<span style="color:#6b7280; font-size:10px;">← live state</span></span><br/>
+        <span style="padding-left:12px;">proposal-viewer.tsx</span><br/>
+        <span style="padding-left:12px;">lead-score-badge.tsx</span><br/>
+        lib/<br/>
+        <span style="padding-left:12px;">ai-client.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← calls AI service</span></span><br/>
+        <span style="padding-left:12px;">sse-handler.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← SSE listener</span></span><br/>
+        package.json<br/>
+        next.config.ts
+      </div>
+    </div>
+
+    <!-- AI Service -->
+    <div>
+      <div style="color:#ffa657; margin-bottom:8px;">ai-service/ &nbsp;<span style="color:#6b7280; font-weight:normal; font-size:11px;">→ Railway (free tier)</span></div>
+      <div style="color:#8b949e; padding-left:12px;">
+        src/<br/>
+        <span style="padding-left:12px;">index.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← Hono app entry</span></span><br/>
+        <span style="padding-left:12px;">routes/ chat.ts · proposal.ts</span><br/>
+        <span style="padding-left:12px; color:#d2a8ff;">pipeline/</span><br/>
+        <span style="padding-left:24px; color:#d2a8ff;">orchestrator.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← runs all 6 layers</span></span><br/>
+        <span style="padding-left:24px; color:#d2a8ff;">l1-understanding.ts</span><br/>
+        <span style="padding-left:24px; color:#d2a8ff;">l2-extraction.ts</span><br/>
+        <span style="padding-left:24px; color:#d2a8ff;">l3-state-engine.ts</span><br/>
+        <span style="padding-left:24px; color:#d2a8ff;">l4-discovery.ts</span><br/>
+        <span style="padding-left:24px; color:#d2a8ff;">l5-scoring.ts</span><br/>
+        <span style="padding-left:24px; color:#d2a8ff;">l6-proposal.ts</span><br/>
+        <span style="padding-left:12px;">prompts/ &nbsp;<span style="color:#6b7280; font-size:10px;">← one file per layer</span></span><br/>
+        <span style="padding-left:12px; color:#79c0ff;">ontology/</span><br/>
+        <span style="padding-left:24px; color:#79c0ff;">feature-mapper.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← pgvector search</span></span><br/>
+        <span style="padding-left:24px; color:#79c0ff;">embedder.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← OpenAI embeddings</span></span><br/>
+        <span style="padding-left:24px; color:#79c0ff;">seed-data.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← initial 150 features</span></span><br/>
+        <span style="padding-left:12px;">state/</span><br/>
+        <span style="padding-left:24px;">manager.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← merge + contradiction</span></span><br/>
+        <span style="padding-left:24px;">memory.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← rolling summary</span></span><br/>
+        <span style="padding-left:24px;">confidence.ts</span><br/>
+        <span style="padding-left:12px;">models/</span><br/>
+        <span style="padding-left:24px;">claude.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← Anthropic SDK + caching</span></span><br/>
+        <span style="padding-left:24px;">groq.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← intent only</span></span><br/>
+        <span style="padding-left:12px;">db/</span><br/>
+        <span style="padding-left:24px;">redis.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← Upstash client</span></span><br/>
+        <span style="padding-left:24px;">prisma.ts &nbsp;<span style="color:#6b7280; font-size:10px;">← Prisma client</span></span><br/>
+        package.json<br/>
+        railway.toml
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:16px; border-top:1px solid #21262d; padding-top:14px;">
+    <div style="color:#56d364; margin-bottom:8px;">shared/ &nbsp;<span style="color:#6b7280; font-weight:normal; font-size:11px;">← TypeScript types imported by both services</span></div>
+    <div style="color:#8b949e; padding-left:12px;">
+      types/project.ts &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280; font-size:10px;">← ProjectRequirementState (updated)</span><br/>
+      types/pipeline.ts &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280; font-size:10px;">← PipelineEvent, SSE payloads</span><br/>
+      types/ontology.ts &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280; font-size:10px;">← CanonicalFeature, FeatureOntologyEntry</span><br/>
+      types/proposal.ts &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280; font-size:10px;">← ProposalContent (unchanged)</span><br/>
+      prisma/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280; font-size:10px;">← schema + migrations (shared)</span>
+    </div>
+  </div>
+</div>
+
+<!-- DB Changes -->
+<div style="font-family:monospace; font-size:12px; background:#0d1117; color:#e6edf3; border-radius:12px; padding:24px 28px; margin-bottom:20px; border:1px solid #30363d; line-height:1.9;">
+
+  <div style="color:#58a6ff; font-weight:bold; margin-bottom:14px; font-size:13px;">Database Changes &nbsp;<span style="color:#6b7280; font-weight:normal;">— Supabase PostgreSQL</span></div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+
+    <!-- New: feature_ontology -->
+    <div>
+      <div style="color:#3fb950; margin-bottom:8px;">NEW — feature_ontology</div>
+      <div style="background:#161b22; border-radius:8px; padding:14px; font-size:11px;">
+        <div style="color:#7ee787;">model FeatureOntology &#123;</div>
+        <div style="color:#8b949e; padding-left:12px;">
+          id &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String &nbsp;&nbsp;@id<br/>
+          canonicalName String<br/>
+          category &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String<br/>
+          aliases &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String[]<br/>
+          <span style="color:#ffa657;">/// VECTOR(1536) — pgvector</span><br/>
+          <span style="color:#ffa657;">/// Added via raw SQL migration</span><br/>
+          typicalComplexity String?<br/>
+          typicalHoursMin Int?<br/>
+          typicalHoursMax Int?<br/>
+          dependencies &nbsp;String[]<br/>
+          incompatibleWith String[]<br/>
+          createdAt &nbsp;&nbsp;&nbsp;&nbsp; DateTime @default(now())<br/>
+        </div>
+        <div style="color:#7ee787;">&#125;</div>
+      </div>
+      <div style="color:#6b7280; font-size:11px; margin-top:6px;">⚠ embedding column added via raw SQL (Prisma doesn't natively support VECTOR type — use prisma.$executeRaw)</div>
+    </div>
+
+    <!-- Updated: ProjectAnalysis -->
+    <div>
+      <div style="color:#ffa657; margin-bottom:8px;">UPDATED — ProjectAnalysis</div>
+      <div style="background:#161b22; border-radius:8px; padding:14px; font-size:11px;">
+        <div style="color:#7ee787;">model ProjectAnalysis &#123;</div>
+        <div style="color:#8b949e; padding-left:12px;">
+          <span style="color:#6b7280;">... existing fields ...</span><br/><br/>
+          <span style="color:#3fb950;">// NEW fields</span><br/>
+          conversationSummary String? @db.Text<br/>
+          fieldConfidence &nbsp;&nbsp;&nbsp;&nbsp;Json &nbsp;&nbsp;&nbsp;@default("&#123;&#125;")<br/>
+          confirmedFacts &nbsp;&nbsp;&nbsp;&nbsp; Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+          assumptions &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+          contradictions &nbsp;&nbsp;&nbsp;&nbsp; Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+          ambiguities &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+          discoveryTargets &nbsp;&nbsp;&nbsp;Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+          technicalRisks &nbsp;&nbsp;&nbsp;&nbsp; Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+          workflows &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+          userRoles &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+          keyDiscoveries &nbsp;&nbsp;&nbsp;&nbsp; Json &nbsp;&nbsp;&nbsp;@default("[]")<br/>
+        </div>
+        <div style="color:#7ee787;">&#125;</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Migration steps -->
+  <div style="margin-top:20px; border-top:1px solid #21262d; padding-top:14px;">
+    <div style="color:#d2a8ff; margin-bottom:10px;">Migration steps you run (I'll generate the exact SQL):</div>
+    <div style="color:#8b949e; font-size:11px;">
+      1. Enable pgvector extension in Supabase dashboard → Extensions → enable "vector"<br/>
+      2. <span style="color:#ffd700;">prisma migrate dev</span> → adds new columns to ProjectAnalysis + creates FeatureOntology table<br/>
+      3. Run raw SQL to add <span style="color:#ffd700;">embedding VECTOR(1536)</span> column + index to feature_ontology<br/>
+      4. Run ontology seed script → embeds 150 pre-built canonical features, inserts into DB<br/>
+      5. Done — zero manual DB work after this
+    </div>
+  </div>
+</div>
+
+<!-- Embedding model note -->
+<div style="background:#111827; border:1px solid #374151; border-radius:8px; padding:14px 16px; margin-bottom:20px;">
+  <div style="color:#9ca3af; font-weight:bold; margin-bottom:6px; font-size:12px; font-family:monospace;">🔢 Embedding model for feature ontology</div>
+  <div style="color:#6b7280; font-size:12px; font-family:monospace;">
+    OpenAI text-embedding-3-small &nbsp;·&nbsp; 1536 dimensions &nbsp;·&nbsp; $0.02 per 1M tokens<br/>
+    Seeding 150 features ≈ 7,500 tokens ≈ <strong style="color:#7ee787;">$0.00015 total</strong> (one-time, basically free)<br/>
+    Per new feature at runtime ≈ ~50 tokens ≈ $0.000001 per embedding call<br/>
+    Add OPENAI_API_KEY to your .env — only used for embeddings, nothing else
+  </div>
+</div>
+
+<div class="section">
+  <h3>What you handle vs. what gets built for you</h3>
+  <div style="font-size:13px; line-height:1.9;">
+    <p><strong>You handle:</strong> Enable pgvector in Supabase dashboard · Set env vars (ANTHROPIC_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, DATABASE_URL, REDIS_URL) · Railway deploy · Git pushes</p>
+    <p><strong>Built for you:</strong> All migration files · Seed script · Every pipeline layer · All prompts · State management · Redis cache layer · SSE streaming · Frontend proxy · Proposal generation</p>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem;">Does this structure look right? Reply in terminal — last section is the implementation roadmap and priority order.</p>

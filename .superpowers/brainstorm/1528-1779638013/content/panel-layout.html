@@ -1,0 +1,143 @@
+<h2>Intelligence Panel Layout</h2>
+<p class="subtitle">What judges see when "👁 View Intelligence" is clicked. Pick the layout that best tells the story.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="scorecard" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1117;padding:12px;font-size:10px;font-family:monospace;min-height:220px;">
+      <div style="color:#3b82f6;font-size:9px;font-weight:bold;letter-spacing:1px;margin-bottom:10px">⚡ LIVE PROJECT INTELLIGENCE</div>
+
+      <!-- Lead Score Hero -->
+      <div style="background:#0f2a1a;border:1px solid #166534;border-radius:6px;padding:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="color:#6b7280;font-size:9px">LEAD SCORE</div>
+          <div style="color:#4ade80;font-size:22px;font-weight:bold;line-height:1">72</div>
+          <div style="color:#4ade80;font-size:9px">High Intent</div>
+        </div>
+        <div style="text-align:right">
+          <div style="color:#6b7280;font-size:9px">COMPLEXITY</div>
+          <div style="color:#f59e0b;font-size:14px;font-weight:bold">MEDIUM</div>
+          <div style="color:#6b7280;font-size:9px">Completeness 68%</div>
+        </div>
+      </div>
+
+      <!-- Fields -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">
+        <div style="background:#111827;border:1px solid #1f2d3d;border-radius:4px;padding:6px;">
+          <div style="color:#6b7280;font-size:8px">PROJECT TYPE</div>
+          <div style="color:#e2e8f0;font-size:9px">Food Delivery</div>
+        </div>
+        <div style="background:#111827;border:1px solid #1f2d3d;border-radius:4px;padding:6px;">
+          <div style="color:#6b7280;font-size:8px">PLATFORMS</div>
+          <div style="color:#e2e8f0;font-size:9px">iOS · Android</div>
+        </div>
+        <div style="background:#111827;border:1px solid #1f2d3d;border-radius:4px;padding:6px;">
+          <div style="color:#6b7280;font-size:8px">BUDGET</div>
+          <div style="color:#e2e8f0;font-size:9px">$15k–$30k</div>
+        </div>
+        <div style="background:#111827;border:1px solid #1f2d3d;border-radius:4px;padding:6px;">
+          <div style="color:#6b7280;font-size:8px">TIMELINE</div>
+          <div style="color:#e2e8f0;font-size:9px">3–4 months</div>
+        </div>
+      </div>
+
+      <!-- Missing Info -->
+      <div style="background:#2d1515;border:1px solid #7f1d1d;border-radius:4px;padding:6px;">
+        <div style="color:#f87171;font-size:8px;margin-bottom:3px">⚠ MISSING INFO</div>
+        <div style="color:#fca5a5;font-size:9px">· Payment gateway preference</div>
+        <div style="color:#fca5a5;font-size:9px">· Real-time order tracking?</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Scorecard Layout</h3>
+      <p>Lead score hero at top, key fields in a 2-col grid, missing info warning at the bottom. Dense but scannable. Judges immediately see the score + complexity + gaps.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;">
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Most info at a glance</span>
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Score is the hero</span>
+        <span style="background:#1e2d3a;border:1px solid #1e4060;padding:4px 8px;border-radius:4px;color:#60a5fa">→ Recommended</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="sectioned" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1117;padding:12px;font-size:10px;font-family:monospace;min-height:220px;">
+      <div style="color:#3b82f6;font-size:9px;font-weight:bold;letter-spacing:1px;margin-bottom:10px">⚡ LIVE PROJECT INTELLIGENCE</div>
+
+      <!-- Section: Overview -->
+      <div style="margin-bottom:8px;">
+        <div style="color:#6b7280;font-size:8px;letter-spacing:1px;margin-bottom:4px;border-bottom:1px solid #1f2d3d;padding-bottom:3px">PROJECT</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#94a3b8;font-size:9px">Type</span><span style="color:#e2e8f0;font-size:9px">Food Delivery</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#94a3b8;font-size:9px">Platforms</span><span style="color:#e2e8f0;font-size:9px">iOS · Android</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:#94a3b8;font-size:9px">Users</span><span style="color:#e2e8f0;font-size:9px">~10k launch</span></div>
+      </div>
+
+      <!-- Section: Qualification -->
+      <div style="margin-bottom:8px;">
+        <div style="color:#6b7280;font-size:8px;letter-spacing:1px;margin-bottom:4px;border-bottom:1px solid #1f2d3d;padding-bottom:3px">QUALIFICATION</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#94a3b8;font-size:9px">Budget</span><span style="color:#4ade80;font-size:9px">$15k–$30k</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#94a3b8;font-size:9px">Timeline</span><span style="color:#4ade80;font-size:9px">3–4 months</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:#94a3b8;font-size:9px">Lead Score</span><span style="color:#4ade80;font-size:9px">72 · High Intent</span></div>
+      </div>
+
+      <!-- Section: Complexity -->
+      <div>
+        <div style="color:#6b7280;font-size:8px;letter-spacing:1px;margin-bottom:4px;border-bottom:1px solid #1f2d3d;padding-bottom:3px">ANALYSIS</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#94a3b8;font-size:9px">Complexity</span><span style="color:#f59e0b;font-size:9px">MEDIUM</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:#94a3b8;font-size:9px">Completeness</span>
+          <span style="color:#94a3b8;font-size:9px">
+            <span style="background:#4ade80;display:inline-block;width:30px;height:5px;border-radius:2px;vertical-align:middle"></span>
+            <span style="background:#1f2d3d;display:inline-block;width:14px;height:5px;border-radius:2px;vertical-align:middle"></span>
+            68%
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Sectioned List</h3>
+      <p>Clean sections: Project → Qualification → Analysis. Easy to read top to bottom. Less visual hierarchy but very readable. Good if the panel is narrow.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;">
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Clean & readable</span>
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Works at any width</span>
+        <span style="background:#3a2020;border:1px solid #5a2d2d;padding:4px 8px;border-radius:4px;color:#f87171">✗ Score doesn't stand out</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="tabbed" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1117;padding:12px;font-size:10px;font-family:monospace;min-height:220px;">
+      <div style="color:#3b82f6;font-size:9px;font-weight:bold;letter-spacing:1px;margin-bottom:8px">⚡ LIVE PROJECT INTELLIGENCE</div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;margin-bottom:10px;border-bottom:1px solid #1f2d3d;">
+        <div style="padding:4px 10px;color:#3b82f6;border-bottom:2px solid #3b82f6;font-size:9px">Overview</div>
+        <div style="padding:4px 10px;color:#6b7280;font-size:9px">Features</div>
+        <div style="padding:4px 10px;color:#6b7280;font-size:9px">Proposal</div>
+      </div>
+
+      <!-- Score -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <div style="background:#0f2a1a;border:1px solid #166534;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span style="color:#4ade80;font-size:16px;font-weight:bold">72</span>
+        </div>
+        <div>
+          <div style="color:#4ade80;font-size:10px;font-weight:bold">High Intent Lead</div>
+          <div style="color:#6b7280;font-size:9px">Food Delivery App · MEDIUM complexity</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8;font-size:9px">Budget</span><span style="color:#4ade80;font-size:9px">$15k–$30k</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8;font-size:9px">Timeline</span><span style="color:#e2e8f0;font-size:9px">3–4 months</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#94a3b8;font-size:9px">Missing</span><span style="color:#f87171;font-size:9px">2 items</span></div>
+    </div>
+    <div class="card-body">
+      <h3>C — Tabbed Panel</h3>
+      <p>Tabs across the top: <strong>Overview</strong> / <strong>Features</strong> / <strong>Proposal</strong>. Lets you show more detail without clutter. The Proposal tab would eventually show the generated proposal document.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;">
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Scales to more content</span>
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Proposal tab fits naturally</span>
+        <span style="background:#3a2c1e;border:1px solid #5a3d1e;padding:4px 8px;border-radius:4px;color:#fbbf24">⚠ More to build</span>
+      </div>
+    </div>
+  </div>
+
+</div>

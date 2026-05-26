@@ -1,0 +1,103 @@
+<h2>Three Architecture Approaches for DEALGHOST</h2>
+<p class="subtitle">Choose the direction before we design the full system</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Multi-Step Pipeline in Next.js</h3>
+      <p><strong>Upgrade in place.</strong> Keep Next.js as the only backend. Redesign each pipeline stage as multi-step Claude reasoning chains. Replace single-shot prompts with structured reasoning. Add proper state machine, confidence scoring, and canonical feature mapping — all inside the existing app.</p>
+      <br/>
+      <p><strong>Stack:</strong> Next.js 16 · Claude Sonnet · Groq · Supabase · Prisma · Vercel</p>
+      <br/>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>Fastest to implement (~1–2 weeks)</li>
+            <li>No new infrastructure</li>
+            <li>Single deployment on Vercel</li>
+            <li>Familiar codebase</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Vercel 30s timeout limits pipeline depth</li>
+            <li>Multi-step Claude chains are risky in serverless</li>
+            <li>No streaming-first architecture</li>
+            <li>Extraction + reasoning + scoring all compete for one request window</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Dedicated AI Service + Next.js Frontend ⭐ Recommended</h3>
+      <p><strong>Proper separation.</strong> Next.js becomes the UI layer only. A dedicated Node.js/Hono AI service owns the entire intelligence pipeline — no timeout constraints, proper streaming, complex multi-step reasoning chains, Redis hot state cache, and an extensible orchestration engine. Deployed on Railway or Render.</p>
+      <br/>
+      <p><strong>Stack:</strong> Next.js (UI) · Hono (AI service) · Claude Sonnet · Groq · Supabase + pgvector · Redis · Railway/Render</p>
+      <br/>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>No timeout constraints on deep reasoning chains</li>
+            <li>Proper SSE streaming to the UI</li>
+            <li>Redis for hot state between turns (sub-10ms reads)</li>
+            <li>pgvector for semantic feature canonicalization</li>
+            <li>Clean separation: UI vs. intelligence</li>
+            <li>Independently scalable AI pipeline</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Two services to deploy and manage</li>
+            <li>Slightly more infrastructure (Redis, Railway)</li>
+            <li>~2–3 weeks to implement correctly</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Mastra Agent Architecture</h3>
+      <p><strong>Maximum power.</strong> Use Mastra as a full agent orchestration framework. Claude drives the entire conversation as a proper agent with tool calls — each pipeline stage becomes a tool (extract requirements, score lead, generate proposal). Claude decides what to invoke and when. Full agent memory, step tracing, and workflow graphs.</p>
+      <br/>
+      <p><strong>Stack:</strong> Mastra · Claude Sonnet (tool-calling agent) · Groq · Supabase + pgvector · Redis · Railway</p>
+      <br/>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>Claude autonomously drives discovery — deeply adaptive</li>
+            <li>Tool-calling architecture is cleanest for complex pipelines</li>
+            <li>Built-in step tracing and observability (Mastra)</li>
+            <li>Most sophisticated conversational intelligence possible</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Mastra is production-new — less stable</li>
+            <li>Hardest to debug when Claude makes wrong tool decisions</li>
+            <li>Most expensive (more Claude tokens per turn)</li>
+            <li>3–4+ weeks to implement properly</li>
+            <li>Overkill for single-agency internal use</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top: 2rem;">Click your preferred approach, then tell me in the terminal. I'll design the full system from there.</p>

@@ -1,0 +1,151 @@
+<h2>Section 2 — The 6-Layer Intelligence Pipeline</h2>
+<p class="subtitle">Every user message flows through all 6 layers. This is the brain of DEALGHOST.</p>
+
+<div style="font-family: monospace; font-size: 12px; background: #0d1117; color: #e6edf3; border-radius: 12px; padding: 24px 28px; margin-bottom: 24px; border: 1px solid #30363d; line-height: 1.8;">
+
+  <!-- Input -->
+  <div style="text-align:center; margin-bottom:12px;">
+    <span style="background:#1f2937; border:1px solid #374151; border-radius:6px; padding:6px 18px; color:#f9fafb; font-size:13px;">💬 User Message + Conversation History + Current State</span>
+  </div>
+  <div style="text-align:center; color:#6b7280; margin-bottom:16px;">▼</div>
+
+  <!-- L1 + L2 parallel -->
+  <div style="display:flex; gap:12px; margin-bottom:6px;">
+    <div style="flex:1; background:#0f2027; border:1px solid #1e40af; border-radius:8px; padding:14px 16px;">
+      <div style="color:#60a5fa; font-weight:bold; margin-bottom:6px;">L1 · Conversational Understanding</div>
+      <div style="color:#93c5fd; font-size:11px; margin-bottom:8px;">CLAUDE SONNET</div>
+      <div style="color:#8b949e; font-size:11px;">
+        → What is the client <em>actually</em> saying beyond surface words?<br/>
+        → Detect: corrections, contradictions, removals, elaborations<br/>
+        → Identify: business domain, urgency signals, workflows hinted at<br/>
+        → Extract: key entities (systems, people, processes)<br/>
+      </div>
+      <div style="margin-top:8px; color:#374151; font-size:10px;">OUT: SemanticUnderstanding { intent, domain, corrections[], contradictions[], entities[] }</div>
+    </div>
+    <div style="flex:1; background:#0f2027; border:1px solid #1e40af; border-radius:8px; padding:14px 16px;">
+      <div style="color:#60a5fa; font-weight:bold; margin-bottom:6px;">L2 · Canonical Requirement Extraction</div>
+      <div style="color:#93c5fd; font-size:11px; margin-bottom:8px;">CLAUDE SONNET</div>
+      <div style="color:#8b949e; font-size:11px;">
+        → Extract features, integrations, platforms, constraints<br/>
+        → Each feature gets a confidence score (0–1)<br/>
+        → Map raw text → canonical IDs via pgvector similarity<br/>
+        &nbsp;&nbsp;&nbsp;"live tracking" → <code style="color:#7ee787;">realtime_delivery_tracking</code><br/>
+        &nbsp;&nbsp;&nbsp;"GPS tracking" → <code style="color:#7ee787;">realtime_delivery_tracking</code><br/>
+        → Distinguish: confirmed fact vs. inferred assumption<br/>
+      </div>
+      <div style="margin-top:8px; color:#374151; font-size:10px;">OUT: ExtractionResult { features[], integrations[], confidence{}, assumptions[] }</div>
+    </div>
+  </div>
+  <div style="text-align:center; color:#6b7280; font-size:11px; margin-bottom:4px;">L1 + L2 run in parallel — both fire simultaneously to save latency</div>
+  <div style="text-align:center; color:#6b7280; margin-bottom:16px;">▼</div>
+
+  <!-- L3 -->
+  <div style="background:#0f1f0f; border:1px solid #166534; border-radius:8px; padding:14px 16px; margin-bottom:6px;">
+    <div style="color:#4ade80; font-weight:bold; margin-bottom:6px;">L3 · State Intelligence Engine</div>
+    <div style="color:#86efac; font-size:11px; margin-bottom:8px;">TYPESCRIPT (deterministic) + CLAUDE (for contradiction resolution only)</div>
+    <div style="color:#8b949e; font-size:11px; display:flex; gap:32px;">
+      <div>
+        → Merge L1 + L2 outputs into ProjectRequirementState<br/>
+        → Resolve contradictions (call Claude if needed)<br/>
+        → Track confidence score per field<br/>
+        → Separate confirmed facts from assumptions<br/>
+      </div>
+      <div>
+        → Flag ambiguities for follow-up targeting<br/>
+        → Compress old conversation into rolling summary<br/>
+        → Recalculate completeness score (weighted)<br/>
+        → Rank discovery targets by proposal-blocking impact<br/>
+      </div>
+    </div>
+    <div style="margin-top:8px; color:#166534; font-size:10px;">OUT: Updated ProjectRequirementState + DiscoveryTargets[] + Contradictions[] + Ambiguities[]</div>
+  </div>
+  <div style="text-align:center; color:#6b7280; margin-bottom:16px;">▼</div>
+
+  <!-- L4 + L5 parallel -->
+  <div style="display:flex; gap:12px; margin-bottom:6px;">
+    <div style="flex:2; background:#1a0f2e; border:1px solid #6d28d9; border-radius:8px; padding:14px 16px;">
+      <div style="color:#c084fc; font-weight:bold; margin-bottom:6px;">L4 · Discovery Strategy Engine</div>
+      <div style="color:#d8b4fe; font-size:11px; margin-bottom:8px;">CLAUDE SONNET</div>
+      <div style="color:#8b949e; font-size:11px;">
+        → Reads updated state + discovery targets + contradiction flags<br/>
+        → Asks: <em>"What is most valuable to learn RIGHT NOW?"</em><br/>
+        → Strategies: clarify_scope · probe_complexity · resolve_contradiction<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;confirm_assumption · discover_workflow · offer_summary<br/>
+        → Generates architect-quality question — not chatbot filler<br/>
+        → Decides: should we offer a summary/proposal instead of asking?<br/>
+      </div>
+      <div style="margin-top:8px; color:#6d28d9; font-size:10px;">OUT: { strategy, targetField, reasoning, question, readyForSummary: bool }</div>
+    </div>
+    <div style="flex:1; background:#1a1a0a; border:1px solid #854d0e; border-radius:8px; padding:14px 16px;">
+      <div style="color:#fbbf24; font-weight:bold; margin-bottom:6px;">L5 · Lead Intelligence</div>
+      <div style="color:#fde68a; font-size:11px; margin-bottom:8px;">CLAUDE SONNET</div>
+      <div style="color:#8b949e; font-size:11px;">
+        → Business maturity signals<br/>
+        → Budget realism check<br/>
+        → Project clarity score<br/>
+        → Urgency &amp; intent signals<br/>
+        → Technical feasibility<br/>
+        → Engagement depth<br/>
+        → Commercial fit for FlowZint<br/>
+      </div>
+      <div style="margin-top:8px; color:#854d0e; font-size:10px;">OUT: LeadScore { score, label, breakdown{}, narrative }</div>
+    </div>
+  </div>
+  <div style="text-align:center; color:#6b7280; font-size:11px; margin-bottom:4px;">L4 + L5 run in parallel — both read from L3 output simultaneously</div>
+  <div style="text-align:center; color:#6b7280; margin-bottom:16px;">▼</div>
+
+  <!-- L6 conditional -->
+  <div style="background:#1a0a0a; border:1px dashed #991b1b; border-radius:8px; padding:14px 16px; margin-bottom:6px;">
+    <div style="color:#f87171; font-weight:bold; margin-bottom:6px;">L6 · Proposal Intelligence &nbsp;<span style="font-weight:normal; color:#6b7280; font-size:11px;">(on-demand only — not every turn)</span></div>
+    <div style="color:#fca5a5; font-size:11px; margin-bottom:8px;">CLAUDE SONNET · Multi-step reasoning chain</div>
+    <div style="color:#8b949e; font-size:11px; display:flex; gap:32px;">
+      <div>
+        <strong style="color:#f87171;">Step 1</strong> — Architecture Selection<br/>
+        &nbsp;&nbsp;What tech stack fits this project?<br/>
+        &nbsp;&nbsp;Why? What are the trade-offs?<br/><br/>
+        <strong style="color:#f87171;">Step 2</strong> — Complexity Calibration<br/>
+        &nbsp;&nbsp;Realistic hours per feature<br/>
+        &nbsp;&nbsp;Phasing strategy<br/>
+      </div>
+      <div>
+        <strong style="color:#f87171;">Step 3</strong> — Risk Identification<br/>
+        &nbsp;&nbsp;Technical risks, scope risks<br/>
+        &nbsp;&nbsp;Budget risks, timeline risks<br/><br/>
+        <strong style="color:#f87171;">Step 4</strong> — Proposal Assembly<br/>
+        &nbsp;&nbsp;Full structured proposal<br/>
+        &nbsp;&nbsp;Executive summary → pricing<br/>
+      </div>
+    </div>
+    <div style="margin-top:8px; color:#991b1b; font-size:10px;">OUT: ProposalContent { executiveSummary, scope, phases, pricing, techStack, risks, team, assumptions }</div>
+  </div>
+  <div style="text-align:center; color:#6b7280; margin-bottom:16px;">▼</div>
+
+  <!-- Output -->
+  <div style="text-align:center;">
+    <span style="background:#1f2937; border:1px solid #374151; border-radius:6px; padding:6px 18px; color:#f9fafb; font-size:13px;">🌊 SSE Stream → Next.js UI (layer-by-layer as pipeline runs)</span>
+  </div>
+
+</div>
+
+<!-- Intent classifier callout -->
+<div style="background:#111827; border:1px solid #374151; border-radius:8px; padding:14px 16px; margin-bottom:24px;">
+  <div style="color:#9ca3af; font-weight:bold; margin-bottom:6px; font-size:12px; font-family:monospace;">⚡ PRE-FLIGHT · Intent Classification &nbsp;—&nbsp; fires BEFORE L1, costs almost nothing</div>
+  <div style="color:#6b7280; font-size:12px; font-family:monospace;">
+    GROQ Llama-3.1-8b &nbsp;·&nbsp; Input: ~200 tokens &nbsp;·&nbsp; Output: 1 label &nbsp;·&nbsp; Latency: ~300ms<br/>
+    Routes: COLLECTING_INFO → full pipeline &nbsp;|&nbsp; REQUESTING_DONE → skip to summary &nbsp;|&nbsp; READY_FOR_PROPOSAL → trigger L6
+  </div>
+</div>
+
+<div class="section">
+  <h3>Execution timing (typical turn)</h3>
+  <div style="font-family:monospace; font-size:12px; color:#8b949e; line-height:2;">
+    <span style="color:#6b7280;">0ms&nbsp;&nbsp;&nbsp;&nbsp;</span> → Intent classification fires (Groq)<br/>
+    <span style="color:#6b7280;">300ms&nbsp;&nbsp;</span> → L1 + L2 fire in parallel (Claude)<br/>
+    <span style="color:#6b7280;">4–8s&nbsp;&nbsp;&nbsp;</span> → L1 + L2 complete, L3 runs instantly (TypeScript)<br/>
+    <span style="color:#6b7280;">8s&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> → L4 + L5 fire in parallel (Claude)<br/>
+    <span style="color:#6b7280;">10–14s&nbsp;</span> → L4 question starts streaming to UI ← <span style="color:#7ee787;">user sees response</span><br/>
+    <span style="color:#6b7280;">14s&nbsp;&nbsp;&nbsp;&nbsp;</span> → L5 score saved, state persisted to Redis + Supabase
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem;">Does this pipeline design look right? Reply in terminal — next section covers the enhanced state schema and the feature ontology.</p>

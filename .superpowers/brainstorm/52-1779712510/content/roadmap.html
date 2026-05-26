@@ -1,0 +1,171 @@
+<h2>Section 5 — Implementation Roadmap</h2>
+<p class="subtitle">Build order, phases, milestones, risks — exactly what gets built and when</p>
+
+<!-- Phase timeline -->
+<div style="font-family:monospace; font-size:12px; background:#0d1117; color:#e6edf3; border-radius:12px; padding:24px 28px; margin-bottom:20px; border:1px solid #30363d; line-height:1.8;">
+
+  <div style="color:#58a6ff; font-weight:bold; margin-bottom:16px; font-size:13px;">Build Phases &nbsp;<span style="color:#6b7280; font-weight:normal;">— estimated for a focused developer</span></div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+    <!-- Phase 1 -->
+    <div style="background:#0d1f0d; border:1px solid #1a4a1a; border-radius:8px; padding:14px;">
+      <div style="color:#4ade80; font-weight:bold; margin-bottom:4px;">Phase 1 — Foundation</div>
+      <div style="color:#6b7280; font-size:11px; margin-bottom:10px;">Days 1–2 &nbsp;·&nbsp; You handle setup, I generate code</div>
+      <div style="color:#8b949e; font-size:11px;">
+        ✦ Monorepo structure (frontend/ ai-service/ shared/)<br/>
+        ✦ Hono app skeleton + health check route<br/>
+        ✦ Claude + Groq SDK wrappers with prompt caching<br/>
+        ✦ Upstash Redis client<br/>
+        ✦ Prisma migration → new ProjectAnalysis fields<br/>
+        ✦ FeatureOntology table + pgvector raw SQL<br/>
+        ✦ All shared TypeScript types<br/>
+        ✦ Environment variables wired up<br/>
+      </div>
+      <div style="margin-top:10px; padding:8px; background:#0a150a; border-radius:4px; color:#6b7280; font-size:10px;">
+        🧑 You do: enable pgvector in Supabase · create Railway project · set env vars
+      </div>
+      <div style="margin-top:6px; color:#4ade80; font-size:11px;">✅ Milestone: Hono service starts, DB migrated, types compile</div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div style="background:#1a0f00; border:1px solid #4a2e00; border-radius:8px; padding:14px;">
+      <div style="color:#fbbf24; font-weight:bold; margin-bottom:4px;">Phase 2 — Core Pipeline</div>
+      <div style="color:#6b7280; font-size:11px; margin-bottom:10px;">Days 3–5 &nbsp;·&nbsp; First working end-to-end response</div>
+      <div style="color:#8b949e; font-size:11px;">
+        ✦ Pre-flight intent classifier (Groq)<br/>
+        ✦ L2 extraction (Claude) — most critical layer<br/>
+        ✦ L3 state engine — merge, contradiction flags<br/>
+        ✦ Feature ontology seed data (150 canonical features)<br/>
+        ✦ Claude-based canonical feature mapping<br/>
+        ✦ Redis hot cache (load/save state per turn)<br/>
+        ✦ POST /chat route — basic request → response<br/>
+        ✦ State persisted to Supabase after each turn<br/>
+      </div>
+      <div style="margin-top:10px; padding:8px; background:#120a00; border-radius:4px; color:#6b7280; font-size:10px;">
+        🧑 You do: test a conversation, confirm state saves to DB
+      </div>
+      <div style="margin-top:6px; color:#fbbf24; font-size:11px;">✅ Milestone: Send a message, get a response, state updates in DB</div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div style="background:#0f0a1f; border:1px solid #3b1f6b; border-radius:8px; padding:14px;">
+      <div style="color:#c084fc; font-weight:bold; margin-bottom:4px;">Phase 3 — Intelligence Layers</div>
+      <div style="color:#6b7280; font-size:11px; margin-bottom:10px;">Days 5–8 &nbsp;·&nbsp; The system gets smart</div>
+      <div style="color:#8b949e; font-size:11px;">
+        ✦ L1 conversational understanding (Claude)<br/>
+        ✦ L1 + L2 parallelised with Promise.all()<br/>
+        ✦ L4 discovery strategy engine (Claude)<br/>
+        ✦ L5 lead scoring — 7-dimension business reasoning<br/>
+        ✦ Confidence scoring per field<br/>
+        ✦ Confirmed facts vs. assumptions separation<br/>
+        ✦ Contradiction detection + resolution<br/>
+        ✦ Rolling conversation summary (turns > 8)<br/>
+        ✦ Discovery targets — ranked by proposal-blocking impact<br/>
+      </div>
+      <div style="margin-top:10px; padding:8px; background:#080510; border-radius:4px; color:#6b7280; font-size:10px;">
+        🧑 You do: test full conversation, check follow-up question quality
+      </div>
+      <div style="margin-top:6px; color:#c084fc; font-size:11px;">✅ Milestone: Architect-quality follow-up questions, lead score updating</div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div style="background:#1a0a0a; border:1px solid #6b1a1a; border-radius:8px; padding:14px;">
+      <div style="color:#f87171; font-weight:bold; margin-bottom:4px;">Phase 4 — Proposal Intelligence</div>
+      <div style="color:#6b7280; font-size:11px; margin-bottom:10px;">Days 8–10 &nbsp;·&nbsp; The money feature</div>
+      <div style="color:#8b949e; font-size:11px;">
+        ✦ L6 multi-step proposal chain (4 reasoning steps)<br/>
+        ✦ Step 1: architecture selection (uses client prefs or Claude reasons)<br/>
+        ✦ Step 2: complexity calibration per feature<br/>
+        ✦ Step 3: risk identification<br/>
+        ✦ Step 4: full proposal assembly<br/>
+        ✦ POST /proposal route<br/>
+        ✦ Proposal saved to Supabase<br/>
+        ✦ Technical risks included in output<br/>
+      </div>
+      <div style="margin-top:10px; padding:8px; background:#120505; border-radius:4px; color:#6b7280; font-size:10px;">
+        🧑 You do: test proposal generation end-to-end
+      </div>
+      <div style="margin-top:6px; color:#f87171; font-size:11px;">✅ Milestone: Full proposal generated from conversation state</div>
+    </div>
+
+    <!-- Phase 5 -->
+    <div style="background:#001a1a; border:1px solid #006b6b; border-radius:8px; padding:14px;">
+      <div style="color:#22d3ee; font-weight:bold; margin-bottom:4px;">Phase 5 — SSE Streaming + Frontend</div>
+      <div style="color:#6b7280; font-size:11px; margin-bottom:10px;">Days 10–13 &nbsp;·&nbsp; The demo wow factor</div>
+      <div style="color:#8b949e; font-size:11px;">
+        ✦ SSE event emission per pipeline layer<br/>
+        ✦ Stream: layer_start · layer_complete · state_update · response<br/>
+        ✦ Frontend SSE listener (sse-handler.ts)<br/>
+        ✦ Next.js proxy routes (thin pass-through to AI service)<br/>
+        ✦ Live intelligence panel — updates as pipeline runs<br/>
+        ✦ Lead score badge — real-time<br/>
+        ✦ Proposal viewer — renders full proposal<br/>
+        ✦ Feature list, confidence indicators, missing info panel<br/>
+      </div>
+      <div style="margin-top:10px; padding:8px; background:#00100f; border-radius:4px; color:#6b7280; font-size:10px;">
+        🧑 You do: test full demo flow in browser
+      </div>
+      <div style="margin-top:6px; color:#22d3ee; font-size:11px;">✅ Milestone: Full demo works — chat + live panel + proposal</div>
+    </div>
+
+    <!-- Phase 6 -->
+    <div style="background:#111827; border:1px solid #374151; border-radius:8px; padding:14px;">
+      <div style="color:#9ca3af; font-weight:bold; margin-bottom:4px;">Phase 6 — Hardening + Deploy</div>
+      <div style="color:#6b7280; font-size:11px; margin-bottom:10px;">Days 13–14 &nbsp;·&nbsp; Hackathon-ready</div>
+      <div style="color:#8b949e; font-size:11px;">
+        ✦ Error handling + graceful fallbacks per layer<br/>
+        ✦ Retry logic on Claude API failures<br/>
+        ✦ Edge cases: empty messages, very short convos<br/>
+        ✦ Railway deploy + env vars configured<br/>
+        ✦ Vercel deploy + proxy env var (AI_SERVICE_URL)<br/>
+        ✦ Demo conversation scripted and tested<br/>
+      </div>
+      <div style="margin-top:10px; padding:8px; background:#0c0f14; border-radius:4px; color:#6b7280; font-size:10px;">
+        🧑 You do: Railway + Vercel deploys, final demo run-through
+      </div>
+      <div style="margin-top:6px; color:#9ca3af; font-size:11px;">✅ Milestone: Live on Railway + Vercel, demo-ready</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Risks -->
+<div style="font-family:monospace; font-size:12px; background:#0d1117; color:#e6edf3; border-radius:12px; padding:20px 28px; margin-bottom:20px; border:1px solid #30363d; line-height:1.8;">
+  <div style="color:#f87171; font-weight:bold; margin-bottom:12px; font-size:13px;">Biggest Architectural Risks</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:11px;">
+    <div>
+      <div style="color:#fbbf24;">⚠ Anthropic rate limits (Tier 1)</div>
+      <div style="color:#6b7280; padding-left:12px;">New API keys are rate-limited. Mitigated by prompt caching and keeping tokens lean. Upgrade tier if needed.</div>
+    </div>
+    <div>
+      <div style="color:#fbbf24;">⚠ pgvector raw SQL migration</div>
+      <div style="color:#6b7280; padding-left:12px;">Prisma doesn't support VECTOR type natively. The migration file needs a raw SQL block. I'll generate this exactly — just needs one careful run.</div>
+    </div>
+    <div>
+      <div style="color:#fbbf24;">⚠ SSE through Vercel proxy</div>
+      <div style="color:#6b7280; padding-left:12px;">Vercel can buffer SSE responses. Needs explicit headers: Cache-Control: no-cache, X-Accel-Buffering: no. One config line — easy to miss.</div>
+    </div>
+    <div>
+      <div style="color:#fbbf24;">⚠ Rolling summary losing context</div>
+      <div style="color:#6b7280; padding-left:12px;">If the summarisation prompt is weak, important facts get lost after turn 8. The summary prompt is critical — needs explicit instruction to preserve all extracted facts.</div>
+    </div>
+  </div>
+</div>
+
+<!-- What current impl fixes -->
+<div class="section">
+  <h3>What this redesign fixes vs. current implementation</h3>
+  <div style="font-size:12px; font-family:monospace; line-height:2;">
+    <span style="color:#f87171;">NOW:</span> Single-shot extraction, misses fields, no confidence &nbsp;→&nbsp; <span style="color:#4ade80;">L1+L2 parallel reasoning chain, confidence per field</span><br/>
+    <span style="color:#f87171;">NOW:</span> "live tracking" ≠ "GPS tracking" → two features &nbsp;→&nbsp; <span style="color:#4ade80;">Both → realtime_delivery_tracking via canonical mapping</span><br/>
+    <span style="color:#f87171;">NOW:</span> No contradiction detection → corrupted state &nbsp;→&nbsp; <span style="color:#4ade80;">L1 detects, L3 flags, L4 resolves</span><br/>
+    <span style="color:#f87171;">NOW:</span> "What's missing?" follow-up → generic questions &nbsp;→&nbsp; <span style="color:#4ade80;">L4 strategy engine → most proposal-blocking unknown</span><br/>
+    <span style="color:#f87171;">NOW:</span> Message count gates for scoring → weak &nbsp;→&nbsp; <span style="color:#4ade80;">Claude business reasoning → budget realism, feasibility</span><br/>
+    <span style="color:#f87171;">NOW:</span> Single-shot proposal → shallow output &nbsp;→&nbsp; <span style="color:#4ade80;">4-step reasoning chain → architecture + risks + pricing</span><br/>
+    <span style="color:#f87171;">NOW:</span> Full history sent every turn → unbounded tokens &nbsp;→&nbsp; <span style="color:#4ade80;">Rolling summary after turn 8 → stable token budget</span><br/>
+    <span style="color:#f87171;">NOW:</span> 30s Vercel timeout risk on deep chains &nbsp;→&nbsp; <span style="color:#4ade80;">Hono on Railway → no timeout, proper SSE streaming</span>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem;">Does this roadmap look right? Reply in terminal — I'll write the full design doc and we move to implementation planning.</p>

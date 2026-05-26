@@ -1,0 +1,81 @@
+<h2>Toggle Button — Two variations</h2>
+<p class="subtitle">One URL, one page. Button reveals/hides the intelligence panel. Pick which toggle style fits the demo.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="subtle" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1923;padding:12px;font-size:11px;font-family:monospace;">
+      <div style="margin-bottom:8px;color:#6b7280;font-size:10px">COLLAPSED (what customer sees)</div>
+      <div style="display:flex;background:#111827;border:1px solid #1f2d3d;border-radius:6px;height:120px;position:relative;overflow:hidden;">
+        <div style="flex:1;padding:10px;">
+          <div style="background:#1f2d3d;border-radius:4px;padding:5px 8px;color:#e2e8f0;font-size:10px;margin-bottom:4px">I want a food delivery app</div>
+          <div style="background:#1e3a4f;border-radius:4px;padding:5px 8px;color:#93c5fd;font-size:10px">What platforms do you have in mind?</div>
+        </div>
+        <div style="position:absolute;top:8px;right:8px;background:#1f2d3d;border:1px solid #374151;border-radius:4px;padding:4px 8px;color:#6b7280;font-size:10px;cursor:pointer">⚙ Admin</div>
+      </div>
+      <div style="margin:8px 0;color:#6b7280;font-size:10px">EXPANDED (after clicking toggle)</div>
+      <div style="display:flex;background:#111827;border:1px solid #1f2d3d;border-radius:6px;height:120px;position:relative;overflow:hidden;gap:0;">
+        <div style="flex:1;padding:10px;border-right:1px solid #1f2d3d;">
+          <div style="background:#1f2d3d;border-radius:4px;padding:5px 8px;color:#e2e8f0;font-size:10px;margin-bottom:4px">I want a food delivery app</div>
+          <div style="background:#1e3a4f;border-radius:4px;padding:5px 8px;color:#93c5fd;font-size:10px">What platforms?</div>
+        </div>
+        <div style="width:140px;padding:10px;background:#0d1a26;">
+          <div style="color:#6b7280;font-size:9px;margin-bottom:6px">INTELLIGENCE</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8;font-size:9px">Type</span><span style="color:#4ade80;font-size:9px">Food App</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8;font-size:9px">Score</span><span style="color:#4ade80;font-size:9px">72/100</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#94a3b8;font-size:9px">Complexity</span><span style="color:#f59e0b;font-size:9px">MED</span></div>
+        </div>
+        <div style="position:absolute;top:8px;right:8px;background:#1e3a4f;border:1px solid #1e4060;border-radius:4px;padding:4px 8px;color:#93c5fd;font-size:10px;cursor:pointer">✕ Close</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Subtle Admin Button</h3>
+      <p>Small <code>⚙ Admin</code> button tucked in the top-right corner. Customers ignore it (it blends in). During demo, presenter clicks it — intelligence panel slides in from the right. Click again to close.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;">
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ One URL, always</span>
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Clean toggle UX</span>
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ No auth needed</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="branded" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1923;padding:12px;font-size:11px;font-family:monospace;">
+      <div style="margin-bottom:8px;color:#6b7280;font-size:10px">COLLAPSED</div>
+      <div style="display:flex;background:#111827;border:1px solid #1f2d3d;border-radius:6px;height:120px;position:relative;overflow:hidden;">
+        <div style="flex:1;padding:10px;">
+          <div style="background:#1f2d3d;border-radius:4px;padding:5px 8px;color:#e2e8f0;font-size:10px;margin-bottom:4px">I want a food delivery app</div>
+          <div style="background:#1e3a4f;border-radius:4px;padding:5px 8px;color:#93c5fd;font-size:10px">What platforms?</div>
+        </div>
+        <div style="position:absolute;bottom:8px;right:8px;background:linear-gradient(135deg,#1e3a8a,#1e4d8c);border:1px solid #3b82f6;border-radius:20px;padding:4px 12px;color:#93c5fd;font-size:10px;cursor:pointer">👁 View Intelligence</div>
+      </div>
+      <div style="margin:8px 0;color:#6b7280;font-size:10px">EXPANDED</div>
+      <div style="display:flex;background:#111827;border:1px solid #1f2d3d;border-radius:6px;height:120px;overflow:hidden;">
+        <div style="flex:1;padding:10px;border-right:1px solid #1f2d3d;">
+          <div style="background:#1f2d3d;border-radius:4px;padding:5px 8px;color:#e2e8f0;font-size:10px;margin-bottom:4px">I want a food delivery app</div>
+          <div style="background:#1e3a4f;border-radius:4px;padding:5px 8px;color:#93c5fd;font-size:10px">What platforms?</div>
+        </div>
+        <div style="width:140px;padding:10px;background:#0d1117;border-left:2px solid #3b82f6;">
+          <div style="color:#3b82f6;font-size:9px;margin-bottom:6px;font-weight:bold">⚡ LIVE INTEL</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8;font-size:9px">Type</span><span style="color:#4ade80;font-size:9px">Food App</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#94a3b8;font-size:9px">Score</span><span style="color:#4ade80;font-size:9px">72/100</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#94a3b8;font-size:9px">Complexity</span><span style="color:#f59e0b;font-size:9px">MED</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Branded "View Intelligence" Button</h3>
+      <p>A more prominent, branded pill button that says <strong>"👁 View Intelligence"</strong>. During demo this is the "wow moment" button — presenter clicks it while explaining the product and the panel dramatically slides in.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11px;">
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Demo-theatrical</span>
+        <span style="background:#1e3a2f;border:1px solid #2d5a3d;padding:4px 8px;border-radius:4px;color:#4ade80">✓ Judges see the intent clearly</span>
+        <span style="background:#3a2c1e;border:1px solid #5a3d1e;padding:4px 8px;border-radius:4px;color:#fbbf24">⚠ Visible to real customers too</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:16px;background:#1a1f2e;border:1px solid #2d3748;border-radius:8px;padding:14px;">
+  <p style="color:#94a3b8;font-size:12px;margin:0"><strong style="color:#e2e8f0">Key point:</strong> With a toggle button, everything lives at one URL (<code>/chat</code>). The intelligence panel data is already computed and stored in DB after each message — the toggle just shows/hides it. No extra API calls needed when toggling open. Instant reveal.</p>
+</div>

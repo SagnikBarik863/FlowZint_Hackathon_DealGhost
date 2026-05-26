@@ -1,0 +1,88 @@
+<h2>Section 1 — System Architecture Overview</h2>
+<p class="subtitle">Two services, clean separation of concerns</p>
+
+<div style="font-family: monospace; font-size: 13px; line-height: 1.7; background: #0d1117; color: #e6edf3; border-radius: 12px; padding: 28px 32px; margin: 0 0 24px 0; border: 1px solid #30363d;">
+
+<div style="color:#58a6ff; font-weight:bold; margin-bottom:16px; font-size:14px;">─── CLIENT BROWSER ─────────────────────────────────────────────────────</div>
+
+<div style="padding-left: 16px; margin-bottom: 20px;">
+  <span style="color:#7ee787;">Next.js App</span> <span style="color:#8b949e;">(Vercel)</span><br/>
+  <span style="color:#8b949e; padding-left:16px;">├─ Chat UI + live intelligence panel</span><br/>
+  <span style="color:#8b949e; padding-left:16px;">├─ SSE listener (real-time pipeline updates)</span><br/>
+  <span style="color:#8b949e; padding-left:16px;">└─ Proposal viewer / lead score display</span>
+</div>
+
+<div style="color:#58a6ff; font-weight:bold; margin: 8px 0 4px 0;">↕  REST + Server-Sent Events (SSE)</div>
+
+<div style="color:#58a6ff; font-weight:bold; margin: 16px 0; font-size:14px;">─── AI INTELLIGENCE SERVICE ──────────────────────────────────────────────</div>
+
+<div style="padding-left: 16px; margin-bottom: 20px;">
+  <span style="color:#ffa657;">Hono API Service</span> <span style="color:#8b949e;">(Railway / Render — no serverless timeout)</span><br/>
+  <span style="color:#8b949e; padding-left:16px;">│</span><br/>
+  <span style="color:#8b949e; padding-left:16px;">├─ POST /chat          → 6-layer intelligence pipeline</span><br/>
+  <span style="color:#8b949e; padding-left:16px;">├─ POST /proposal      → multi-step proposal generation</span><br/>
+  <span style="color:#8b949e; padding-left:16px;">├─ GET  /state/:id     → load project state</span><br/>
+  <span style="color:#8b949e; padding-left:16px;">└─ SSE  /stream/:id    → pipeline progress streaming</span><br/>
+  <br/>
+  <span style="color:#d2a8ff; padding-left:16px;">6-Layer Intelligence Pipeline:</span><br/>
+  <span style="color:#8b949e; padding-left:32px;">L1 → Conversational Understanding    </span><span style="color:#ffa657;">[Claude]</span><br/>
+  <span style="color:#8b949e; padding-left:32px;">L2 → Canonical Requirement Extraction </span><span style="color:#ffa657;">[Claude]</span><br/>
+  <span style="color:#8b949e; padding-left:32px;">L3 → State Intelligence Engine        </span><span style="color:#7ee787;">[TypeScript + Claude]</span><br/>
+  <span style="color:#8b949e; padding-left:32px;">L4 → Discovery Strategy Engine        </span><span style="color:#ffa657;">[Claude]</span><br/>
+  <span style="color:#8b949e; padding-left:32px;">L5 → Lead Intelligence                </span><span style="color:#79c0ff;">[Groq 70b]</span><br/>
+  <span style="color:#8b949e; padding-left:32px;">L6 → Proposal Intelligence            </span><span style="color:#ffa657;">[Claude — on demand]</span>
+</div>
+
+<div style="color:#58a6ff; font-weight:bold; margin: 8px 0 4px 0;">↕  SDK calls (Anthropic)    ↕  SDK calls (Groq)</div>
+
+<div style="color:#58a6ff; font-weight:bold; margin: 16px 0; font-size:14px;">─── AI MODELS ────────────────────────────────────────────────────────────</div>
+
+<div style="padding-left: 16px; margin-bottom: 20px; display:flex; gap:48px;">
+  <div>
+    <span style="color:#ffa657;">Claude Sonnet 4.6</span> <span style="color:#8b949e;">(Anthropic)</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Heavy reasoning, extraction</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">follow-up gen, proposals</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Prompt caching enabled</span>
+  </div>
+  <div>
+    <span style="color:#79c0ff;">Groq (Llama 70b + 8b)</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Intent classification</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Lead scoring</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Fast/cheap utility tasks</span>
+  </div>
+</div>
+
+<div style="color:#58a6ff; font-weight:bold; margin: 8px 0 4px 0;">↕  Reads/Writes</div>
+
+<div style="color:#58a6ff; font-weight:bold; margin: 16px 0; font-size:14px;">─── DATA LAYER ───────────────────────────────────────────────────────────</div>
+
+<div style="padding-left: 16px; display:flex; gap:48px;">
+  <div>
+    <span style="color:#56d364;">Redis</span> <span style="color:#8b949e;">(Upstash)</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Hot state cache</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">TTL: 2 hours per session</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Sub-10ms between turns</span>
+  </div>
+  <div>
+    <span style="color:#56d364;">Supabase PostgreSQL</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">+ pgvector extension</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">All persistent state</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Feature ontology vectors</span><br/>
+    <span style="color:#8b949e; padding-left:16px;">Leads, proposals, history</span>
+  </div>
+</div>
+
+</div>
+
+<div class="section">
+  <h3>Key architectural decisions</h3>
+  <ul>
+    <li><strong>No serverless for AI:</strong> The Hono service runs on a persistent server (Railway). Deep multi-step Claude chains need 15–30 seconds — that kills Vercel functions.</li>
+    <li><strong>Redis hot cache:</strong> Between turns, state is loaded from Redis (not Postgres) — sub-10ms vs 50–200ms. Postgres is the source of truth; Redis is the speed layer.</li>
+    <li><strong>SSE streaming:</strong> The pipeline streams layer-by-layer results back to the UI. The client sees "Extracting requirements..." → "Detecting gaps..." → "Generating question..." in real time.</li>
+    <li><strong>pgvector feature ontology:</strong> A pre-built table of canonical features with vector embeddings. "live tracking" and "GPS tracking" map to the same canonical ID via cosine similarity search — no more duplicate features.</li>
+    <li><strong>Prompt caching on Claude:</strong> System prompts are marked as cacheable. 75% discount on repeated tokens. The extraction system prompt (~800 tokens) is reused every turn.</li>
+  </ul>
+</div>
+
+<p class="subtitle">Does this overall architecture look right? Reply in the terminal — I'll then present the 6-layer pipeline design.</p>

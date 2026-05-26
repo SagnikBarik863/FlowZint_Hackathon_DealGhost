@@ -1,0 +1,53 @@
+<h2>How should the demo/admin split view be accessed?</h2>
+<p class="subtitle">Customer always sees clean chat only — this controls how <strong>judges & FlowZint staff</strong> reach the split panel during the demo</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Separate <code>/demo</code> route</h3>
+      <p>Judges go to <code>/demo</code> — shows full split panel (chat left, intelligence right). Customer goes to <code>/chat</code> — sees only the conversation. Clean separation, zero auth needed.</p>
+      <div style="display:flex;gap:8px;margin-top:10px;font-size:11px;">
+        <div style="background:#1e3a2f;border:1px solid #2d5a3d;padding:6px 10px;border-radius:4px;color:#4ade80">✓ Simplest to build</div>
+        <div style="background:#1e3a2f;border:1px solid #2d5a3d;padding:6px 10px;border-radius:4px;color:#4ade80">✓ Best for live demo</div>
+        <div style="background:#1e2d3a;border:1px solid #1e4060;padding:6px 10px;border-radius:4px;color:#60a5fa">→ Recommended</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Query param toggle</h3>
+      <p><code>/chat?view=admin</code> expands the split panel inline. Same page, URL-controlled. Customer at <code>/chat</code> sees only chat.</p>
+      <div style="display:flex;gap:8px;margin-top:10px;font-size:11px;">
+        <div style="background:#1e3a2f;border:1px solid #2d5a3d;padding:6px 10px;border-radius:4px;color:#4ade80">✓ One page to maintain</div>
+        <div style="background:#3a2020;border:1px solid #5a2d2d;padding:6px 10px;border-radius:4px;color:#f87171">✗ More complex logic</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hidden keyboard shortcut</h3>
+      <p>Customer sees clean chat. Presenter presses a key combo (e.g. <code>Ctrl+Shift+D</code>) on demo day to reveal the intelligence panel sliding in from the right.</p>
+      <div style="display:flex;gap:8px;margin-top:10px;font-size:11px;">
+        <div style="background:#1e3a2f;border:1px solid #2d5a3d;padding:6px 10px;border-radius:4px;color:#4ade80">✓ Most impressive live demo effect</div>
+        <div style="background:#3a2020;border:1px solid #5a2d2d;padding:6px 10px;border-radius:4px;color:#f87171">✗ Risky if shortcut misfires</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="d" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Separate <code>/admin</code> dashboard</h3>
+      <p>Full admin dashboard at <code>/admin</code> with multiple leads, analytics, and the split panel as one feature. More like a real product's backend.</p>
+      <div style="display:flex;gap:8px;margin-top:10px;font-size:11px;">
+        <div style="background:#1e3a2f;border:1px solid #2d5a3d;padding:6px 10px;border-radius:4px;color:#4ade80">✓ Most "real product" feel</div>
+        <div style="background:#3a2020;border:1px solid #5a2d2d;padding:6px 10px;border-radius:4px;color:#f87171">✗ More scope, 4-week risk</div>
+      </div>
+    </div>
+  </div>
+</div>

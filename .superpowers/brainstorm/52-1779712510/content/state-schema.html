@@ -1,0 +1,146 @@
+<h2>Section 3 — Enhanced State Schema + Feature Ontology</h2>
+<p class="subtitle">The central intelligence object that evolves throughout every conversation</p>
+
+<!-- State Schema -->
+<div style="font-family: monospace; font-size: 12px; background: #0d1117; color: #e6edf3; border-radius: 12px; padding: 24px 28px; margin-bottom: 20px; border: 1px solid #30363d; line-height: 1.9;">
+
+<div style="color:#58a6ff; font-weight:bold; margin-bottom:14px; font-size:13px;">ProjectRequirementState &nbsp;<span style="color:#6b7280; font-weight:normal;">— lives in Redis (hot) + Supabase (cold)</span></div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+
+  <!-- Column 1 -->
+  <div>
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Project Identity ────────────────</div>
+    <div style="color:#8b949e;">projectType: <span style="color:#ffa657;">CanonicalProjectType</span> | null</div>
+    <div style="color:#8b949e;">projectName: string | null</div>
+    <div style="color:#8b949e;">description: string | null</div>
+    <div style="color:#8b949e;">businessModel: <span style="color:#79c0ff;">'B2B'|'B2C'|'marketplace'|'internal'</span> | null <span style="color:#3fb950;">// NEW</span></div>
+    <div style="color:#8b949e; margin-bottom:12px;">industry: string | null</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Canonical Features ──────────────</div>
+    <div style="color:#8b949e;">features: <span style="color:#ffa657;">CanonicalFeature</span>[] &nbsp;<span style="color:#3fb950;">// mapped to ontology IDs</span></div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">{ canonicalId, rawText, confidence,</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">&nbsp;&nbsp;category, priority, isConfirmed }</div>
+    <div style="color:#8b949e; margin-bottom:12px;">integrations: <span style="color:#ffa657;">CanonicalIntegration</span>[]</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Scope ───────────────────────────</div>
+    <div style="color:#8b949e;">platforms: string[]</div>
+    <div style="color:#8b949e;">authRequirements: string | null</div>
+    <div style="color:#8b949e;">realtimeRequirements: string | null</div>
+    <div style="color:#8b949e; margin-bottom:12px;">adminPanelRequirements: string | null</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Business Context ────────────────</div>
+    <div style="color:#8b949e;">targetUsers: string | null</div>
+    <div style="color:#8b949e;">userScale: string | null</div>
+    <div style="color:#8b949e; margin-bottom:12px;">compliance: string[]</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Constraints ─────────────────────</div>
+    <div style="color:#8b949e;">technicalConstraints: string | null</div>
+    <div style="color:#8b949e;">timelineExpectation: string | null</div>
+    <div style="color:#8b949e; margin-bottom:12px;">budgetRange: BudgetRange</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Client Tech Preferences ─────────</div>
+    <div style="color:#8b949e;">clientTechPreferences: <span style="color:#ffa657;">TechPreference</span> | null <span style="color:#3fb950;">// NEW</span></div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">{ frontend?, backend?, database?,</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">&nbsp;&nbsp;hosting?, avoid[], existingSystems[] }</div>
+  </div>
+
+  <!-- Column 2 -->
+  <div>
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Workflow Intelligence ────────────&nbsp;<span style="color:#3fb950;">NEW</span></div>
+    <div style="color:#8b949e;">workflows: <span style="color:#ffa657;">Workflow</span>[]</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">{ name, steps[], actors[], triggers[] }</div>
+    <div style="color:#8b949e; margin-bottom:12px;">userRoles: <span style="color:#ffa657;">UserRole</span>[]</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Confidence & Quality ─────────────&nbsp;<span style="color:#3fb950;">NEW</span></div>
+    <div style="color:#8b949e;">fieldConfidence: Record&lt;string, number&gt;</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">// 0–1 per field. Low = ask again.</div>
+    <div style="color:#8b949e;">confirmedFacts: string[]</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">// Explicitly confirmed by client</div>
+    <div style="color:#8b949e;">assumptions: string[]</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">// Inferred — needs confirmation</div>
+    <div style="color:#8b949e;">contradictions: <span style="color:#ffa657;">Contradiction</span>[]</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">// Conflicts that need resolving</div>
+    <div style="color:#8b949e; margin-bottom:12px;">ambiguities: <span style="color:#ffa657;">Ambiguity</span>[]</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Conversation Memory ──────────────&nbsp;<span style="color:#3fb950;">NEW</span></div>
+    <div style="color:#8b949e;">conversationSummary: string | null</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">// Rolling summary of turns &gt; 8</div>
+    <div style="color:#8b949e; margin-bottom:12px;">keyDiscoveries: string[]</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Discovery Intelligence ───────────&nbsp;<span style="color:#3fb950;">NEW</span></div>
+    <div style="color:#8b949e;">discoveryTargets: <span style="color:#ffa657;">DiscoveryTarget</span>[]</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">{ field, strategy, blockingScore,</div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">&nbsp;&nbsp;suggestedQuestion }</div>
+    <div style="color:#8b949e; margin-bottom:12px;">technicalRisks: <span style="color:#ffa657;">TechnicalRisk</span>[]</div>
+
+    <div style="color:#7ee787; margin-bottom:6px;">// ── Pipeline Outputs ─────────────────</div>
+    <div style="color:#8b949e;">inferredComplexity: ComplexityLevel | null</div>
+    <div style="color:#8b949e;">recommendedTechStack: <span style="color:#ffa657;">TechStackRecommendation</span></div>
+    <div style="color:#6b7280; padding-left:16px; font-size:11px;">// Claude-generated if no client prefs</div>
+    <div style="color:#8b949e;">completenessScore: number &nbsp;<span style="color:#6b7280; font-size:11px;">// weighted 0–100</span></div>
+    <div style="color:#8b949e;">missingInformation: MissingField[]</div>
+    <div style="color:#8b949e;">leadScore: LeadScore | null</div>
+    <div style="color:#8b949e;">summary: string | null</div>
+  </div>
+
+</div>
+</div>
+
+<!-- Feature Ontology -->
+<div style="font-family: monospace; font-size: 12px; background: #0d1117; color: #e6edf3; border-radius: 12px; padding: 24px 28px; margin-bottom: 20px; border: 1px solid #30363d; line-height: 1.9;">
+
+<div style="color:#ffa657; font-weight:bold; margin-bottom:14px; font-size:13px;">Feature Ontology &nbsp;<span style="color:#6b7280; font-weight:normal;">— pgvector table in Supabase</span></div>
+
+<div style="color:#8b949e; margin-bottom:16px; font-size:12px;">Solves the core deduplication problem: "live tracking", "GPS tracking", "track orders" all resolve to the same canonical feature. No more duplicate features in the extracted state.</div>
+
+<div style="background:#161b22; border-radius:8px; padding:16px; margin-bottom:16px;">
+<div style="color:#7ee787; margin-bottom:8px;">feature_ontology table</div>
+<div style="color:#8b949e;">id &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TEXT PRIMARY KEY &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- 'realtime_delivery_tracking'</span></div>
+<div style="color:#8b949e;">canonical_name &nbsp; TEXT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- 'Real-time Delivery Tracking'</span></div>
+<div style="color:#8b949e;">category &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; TEXT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- 'logistics', 'auth', 'payments'</span></div>
+<div style="color:#8b949e;">aliases &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TEXT[] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- ['live tracking', 'GPS tracking', ...]</span></div>
+<div style="color:#8b949e;">embedding &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VECTOR(1536) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- semantic similarity search</span></div>
+<div style="color:#8b949e;">typical_complexity TEXT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- 'LOW', 'MEDIUM', 'HIGH'</span></div>
+<div style="color:#8b949e;">typical_hours &nbsp;&nbsp;&nbsp; INT4RANGE &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- [40, 80]</span></div>
+<div style="color:#8b949e;">dependencies &nbsp;&nbsp;&nbsp;&nbsp;TEXT[] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- ['user_auth', 'maps_integration']</span></div>
+<div style="color:#8b949e;">incompatible_with TEXT[] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6b7280;">-- features that conflict</span></div>
+</div>
+
+<div style="color:#d2a8ff; margin-bottom:8px;">How canonical mapping works at extraction time:</div>
+<div style="color:#8b949e;">
+1. L2 extracts raw feature text: <span style="color:#ffd700;">"I need live GPS tracking for drivers"</span><br/>
+2. Embed the text → 1536-dimension vector<br/>
+3. pgvector cosine similarity search against feature_ontology<br/>
+4. Score &gt; 0.85 → map to <span style="color:#7ee787;">realtime_delivery_tracking</span> (confident match)<br/>
+5. Score 0.60–0.85 → Claude confirms: <span style="color:#6b7280;">"Is this the same as real-time delivery tracking?"</span><br/>
+6. Score &lt; 0.60 → new canonical entry created, added to ontology<br/>
+7. Feature stored with canonicalId + confidence + rawText preserved
+</div>
+
+</div>
+
+<!-- Key differences from current -->
+<div class="section">
+  <h3>What this adds vs. the current implementation</h3>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:13px;">
+    <div>
+      <p><strong style="color:#f87171;">Current:</strong> Features stored as raw strings — "live tracking" and "GPS tracking" become two separate features</p>
+      <p><strong style="color:#4ade80;">New:</strong> Both resolve to <code>realtime_delivery_tracking</code> via pgvector. One feature, no duplicates.</p>
+    </div>
+    <div>
+      <p><strong style="color:#f87171;">Current:</strong> No confidence tracking — every extracted field treated as equally certain</p>
+      <p><strong style="color:#4ade80;">New:</strong> Every field has a confidence score. Low-confidence fields get re-targeted by the discovery engine.</p>
+    </div>
+    <div>
+      <p><strong style="color:#f87171;">Current:</strong> No contradiction detection — if client changes their mind, old data persists silently</p>
+      <p><strong style="color:#4ade80;">New:</strong> L1 detects contradictions, L3 flags them, L4 resolves them before they corrupt the proposal.</p>
+    </div>
+    <div>
+      <p><strong style="color:#f87171;">Current:</strong> Full conversation history sent every turn — grows unbounded</p>
+      <p><strong style="color:#4ade80;">New:</strong> Rolling summary compresses turns older than 8. Claude always has context without burning tokens.</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem;">Does this state schema look right? Reply in terminal — next section covers the database changes and implementation file structure.</p>
