@@ -92,17 +92,23 @@ export interface L2Input {
   latestMessage: string
   conversationHistory: string
   currentState: ProjectRequirementState
+  /** Optional context string from L1 — injected before the user message for correction-aware extraction */
+  l1Context?: string
 }
 
 export async function runL2Extraction(input: L2Input): Promise<ExtractionResult> {
   const ontologySection = await getOntologyPromptSection()
 
   const systemPrompt = buildExtractionSystemPrompt(ontologySection)
-  const userPrompt = buildExtractionUserPrompt(
+  const baseUserPrompt = buildExtractionUserPrompt(
     input.latestMessage,
     input.conversationHistory,
     compactStateForPrompt(input.currentState as unknown as Record<string, unknown>)
   )
+  // Prepend L1 context when provided (correction/intent awareness)
+  const userPrompt = input.l1Context
+    ? `${input.l1Context}\n\n${baseUserPrompt}`
+    : baseUserPrompt
 
   const result = await callClaudeJSON(
     {

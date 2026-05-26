@@ -1,0 +1,68 @@
+import { z } from 'zod'
+import { callClaudeJSON } from '../models/claude.js'
+import { buildUnderstandingSystemPrompt, buildUnderstandingUserPrompt } from '../prompts/understanding.js'
+import { compactStateForPrompt } from '../prompts/extraction.js'
+import { MODELS } from '../models/constants.js'
+import type { SemanticUnderstanding, ProjectRequirementState } from '@dealghost/shared'
+
+// ── Zod schema ───────────────────────────────────────────────────────────────
+
+const SemanticUnderstandingSchema = z.object({
+  semanticIntent: z.enum([
+    'adding', 'correcting', 'removing', 'clarifying',
+    'elaborating', 'questioning', 'done', 'confirming',
+  ]),
+  businessDomain: z.string(),
+  keyEntities: z.array(
+    z.object({
+      type: z.enum(['feature', 'integration', 'constraint', 'person', 'system']),
+      value: z.string(),
+    })
+  ).default([]),
+  corrections: z.array(
+    z.object({
+      field: z.string(),
+      oldValue: z.string(),
+      newValue: z.string(),
+    })
+  ).default([]),
+  contradictions: z.array(
+    z.object({
+      existingFact: z.string(),
+      newStatement: z.string(),
+      field: z.string(),
+    })
+  ).default([]),
+  workflowsDescribed: z.array(z.string()).default([]),
+  urgencySignals: z.array(z.string()).default([]),
+  businessModelHints: z.array(z.string()).default([]),
+  confidenceInUnderstanding: z.number().min(0).max(1),
+})
+
+// ── Layer function ────────────────────────────────────────────────────────────
+
+export interface L1Input {
+  latestMessage: string
+  conversationHistory: string
+  currentState: ProjectRequirementState
+}
+
+export async function runL1Understanding(input: L1Input): Promise<SemanticUnderstanding> {
+  const systemPrompt = buildUnderstandingSystemPrompt()
+  const userPrompt = buildUnderstandingUserPrompt(
+    input.latestMessage,
+    input.conversationHistory,
+    compactStateForPrompt(input.currentState as unknown as Record<string, unknown>)
+  )
+
+  return callClaudeJSON(
+    {
+      model: MODELS.L1_UNDERSTANDING,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+      maxTokens: 800,
+      temperature: 0,
+    },
+    (raw) => SemanticUnderstandingSchema.parse(JSON.parse(raw)) as SemanticUnderstanding
+  )
+}

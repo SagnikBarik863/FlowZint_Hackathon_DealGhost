@@ -36,7 +36,60 @@ export interface ClaudeResponse {
   model: string;
 }
 
-const DEFAULT_MODEL: ModelId = 'claude-sonnet-4-6';
+const DEFAULT_MODEL: ModelId = 'claude-sonnet-4-6'
+
+/**
+ * Extract the first complete JSON object or array from a string.
+ * Handles: markdown fences, leading/trailing text, explanations after the JSON.
+ *
+ * Strategy:
+ * 1. Strip markdown code fences
+ * 2. Find the first { or [
+ * 3. Walk forward tracking brace depth to find the matching close
+ * 4. Return that substring
+ */
+function extractJSON(text: string): string {
+  // Step 1: strip markdown fences
+  let s = text
+    .replace(/^```(?:json)?\s*/m, '')
+    .replace(/\s*```\s*$/m, '')
+    .trim()
+
+  // Step 2: find first { or [
+  const startObj = s.indexOf('{')
+  const startArr = s.indexOf('[')
+
+  let start: number
+  let open: string
+  let close: string
+
+  if (startObj === -1 && startArr === -1) return s // no JSON found — let caller fail
+  if (startObj === -1) { start = startArr; open = '['; close = ']' }
+  else if (startArr === -1) { start = startObj; open = '{'; close = '}' }
+  else if (startObj < startArr) { start = startObj; open = '{'; close = '}' }
+  else { start = startArr; open = '['; close = ']' }
+
+  // Step 3: walk forward with depth tracking
+  let depth = 0
+  let inString = false
+  let escape = false
+
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\' && inString) { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === open) depth++
+    else if (ch === close) {
+      depth--
+      if (depth === 0) return s.slice(start, i + 1)
+    }
+  }
+
+  // Didn't find matching close — return from start to end and let parser fail
+  return s.slice(start)
+};
 
 /**
  * Call Claude with a structured prompt. Returns raw text content and token counts.
@@ -78,11 +131,8 @@ export async function callClaude(opts: ClaudeOptions): Promise<ClaudeResponse> {
 export async function callClaudeJSON<T>(opts: ClaudeOptions, parser?: (raw: string) => T): Promise<T> {
   const response = await callClaude(opts);
 
-  // Strip markdown code fences if present (Claude sometimes wraps JSON in ```json)
-  const raw = response.content
-    .replace(/^```(?:json)?\s*/m, '')
-    .replace(/\s*```\s*$/m, '')
-    .trim();
+  // Robustly extract JSON from response — handles code fences, trailing text, explanations
+  const raw = extractJSON(response.content);
 
   if (parser) {
     return parser(raw);
