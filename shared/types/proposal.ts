@@ -1,48 +1,44 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Proposal types — structures for L6 proposal generation and persistence
-// ─────────────────────────────────────────────────────────────────────────────
-
-import type { ProjectState } from './project.js';
-import type { ScoreCard } from './pipeline.js';
-
-export interface ProposalRequest {
-  projectId: string;
-  stateSnapshot: ProjectState;
-  scoreCard: ScoreCard;
-  customInstructions?: string; // optional user-provided additions
-}
-
-export interface Proposal {
-  id: string;
-  projectId: string;
-  version: number;
-  sections: ProposalContent[];
-  metadata: ProposalMetadata;
-  createdAt: string;
-}
-
 export interface ProposalContent {
-  id: string;
-  title: string;
-  content: string; // markdown
-  order: number;
+  executiveSummary: string
+  scope: {
+    included: string[]
+    excluded: string[]
+  }
+  deliverables: Array<{
+    name: string
+    description: string
+    milestone: string
+  }>
+  timeline: {
+    phases: Array<{
+      name: string
+      durationWeeks: number
+      deliverables: string[]
+    }>
+  }
+  pricing: {
+    model: 'fixed' | 'time_and_materials' | 'retainer'
+    breakdown: Array<{ item: string; costUsd: number }>
+    totalUsd: number
+    currency: string
+  }
+  techStack: {
+    frontend: string
+    backend: string
+    database: string
+    hosting: string
+    reasoning: string
+  }
+  team: Array<{
+    role: string
+    count: number
+    allocationPct: number
+  }>
+  assumptions: string[]
+  risks: Array<{
+    description: string
+    severity: 'LOW' | 'MEDIUM' | 'HIGH'
+    mitigation: string
+  }>
+  terms: string
 }
-
-export interface ProposalMetadata {
-  stateHash: string; // fingerprint of state used to generate this proposal
-  modelUsed: string;
-  tokensUsed?: number;
-  generationMs: number;
-}
-
-// Section identifiers for standard proposal structure
-export type ProposalSectionId =
-  | 'executive-summary'
-  | 'problem-statement'
-  | 'proposed-solution'
-  | 'feature-scope'
-  | 'technical-approach'
-  | 'integrations'
-  | 'timeline'
-  | 'investment'
-  | 'next-steps';

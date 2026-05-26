@@ -1,51 +1,14 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Feature Ontology — the structured knowledge base of known software features
-// loaded from the database and used by L4 discovery to generate smart questions
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface FeatureOntologyEntry {
-  id: string;
-  name: string;
-  category: OntologyCategory;
-  description: string;
-
-  // Discovery relationships
-  commonlyPairedWith: string[]; // other feature IDs often requested together
-  impliedBy: string[]; // if these features are confirmed, this one is likely needed
-  requiresDiscussion: boolean; // flag: needs clarifying questions before scoping
-
-  // Complexity signals
-  complexitySignals: ComplexitySignal[];
-  defaultComplexity: 'low' | 'medium' | 'high' | 'variable';
-
-  // Integration hints
-  integrationHints: string[]; // e.g. ["Stripe", "Braintree"] for payment feature
-
-  // Question templates for L4
-  discoveryQuestions: string[]; // template questions to ask if this feature is mentioned
-
-  // Metadata
-  tags: string[];
-  updatedAt: string;
-}
-
-export type OntologyCategory =
-  | 'auth'
-  | 'payments'
-  | 'notifications'
-  | 'media'
-  | 'search'
-  | 'analytics'
-  | 'admin'
-  | 'api'
-  | 'realtime'
-  | 'ai-ml'
-  | 'compliance'
-  | 'infrastructure'
-  | 'other';
-
-export interface ComplexitySignal {
-  signal: string; // e.g. "multi-tenant", "SSO", "PCI compliance"
-  addsComplexity: 'low' | 'medium' | 'high';
-  explanation: string;
+  id: string                   // snake_case canonical ID e.g. 'realtime_delivery_tracking'
+  canonicalName: string        // human-readable e.g. 'Real-time Delivery Tracking'
+  category: string             // 'auth' | 'payments' | 'tracking' | 'logistics' | ...
+  description: string | null   // one-sentence description of what this capability does
+  aliases: string[]            // ['live tracking', 'GPS tracking', 'track orders', ...]
+  typicalComplexity: 'LOW' | 'MEDIUM' | 'HIGH' | null
+  typicalHoursMin: number | null
+  typicalHoursMax: number | null
+  dependencies: string[]       // canonical IDs this feature requires to function
+  incompatibleWith: string[]
+  relatedFeatures: string[]    // commonly appear alongside this feature (not required)
+  commonProjectTypes: string[] // project types that typically need this feature
 }

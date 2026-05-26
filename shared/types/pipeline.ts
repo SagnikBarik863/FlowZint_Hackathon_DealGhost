@@ -1,139 +1,107 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Pipeline layer I/O types — inputs/outputs for each layer in the 6-layer pipeline
-// ─────────────────────────────────────────────────────────────────────────────
+import type { CanonicalFeature, TechPreference, Workflow, UserRole, BudgetRange, Contradiction } from './project.js'
 
-import type { ProjectState, FeatureEntry } from './project.js';
-
-// ── L1: Semantic Understanding ────────────────────────────────────────────────
-
-export type SemanticIntent =
-  | 'providing'      // Adding new information
-  | 'correcting'     // Fixing a prior misunderstanding — triggers replace semantics in L3
-  | 'removing'       // Explicitly removing a feature/requirement
-  | 'questioning'    // Asking a question, no state update needed
-  | 'confirming'     // Agreeing with something AI said
-  | 'other';
+// ── L1 Output ───────────────────────────────────────────────────────────────
 
 export interface SemanticUnderstanding {
-  intent: SemanticIntent;
-  confidence: number; // 0–1
+  semanticIntent:
+    | 'adding'
+    | 'correcting'
+    | 'removing'
+    | 'clarifying'
+    | 'elaborating'
+    | 'questioning'
+    | 'done'
+    | 'confirming'
+  businessDomain: string
   keyEntities: Array<{
-    type: 'person' | 'system' | 'pain-point' | 'goal' | 'constraint' | 'other';
-    value: string;
-    context?: string;
-  }>;
-  uncertainFields: string[]; // field names user is unsure about e.g. ["budget", "timeline"]
-  featuresToRemove: string[]; // feature IDs or names user explicitly removed
-  rawReasoning?: string; // chain-of-thought from L1 (debug only)
+    type: 'feature' | 'integration' | 'constraint' | 'person' | 'system'
+    value: string
+  }>
+  corrections: Array<{ field: string; oldValue: string; newValue: string }>
+  contradictions: Array<{ existingFact: string; newStatement: string; field: string }>
+  workflowsDescribed: string[]
+  urgencySignals: string[]
+  businessModelHints: string[]
+  confidenceInUnderstanding: number // 0–1
 }
 
-// ── L2: Feature Extraction ────────────────────────────────────────────────────
+// ── L2 Output ───────────────────────────────────────────────────────────────
 
 export interface ExtractionResult {
-  confirmedFeatures: FeatureEntry[];
-  potentialFeatures: FeatureEntry[];
-  integrations: Array<{
-    name: string;
-    type?: string;
-    required: boolean;
-    notes?: string;
-  }>;
-  constraints: Array<{
-    type: 'technical' | 'compliance' | 'budget' | 'team' | 'other';
-    value: string;
-    certain: boolean;
-  }>;
-  budget?: {
-    min?: number;
-    max?: number;
-    currency?: string;
-    raw?: string;
-    uncertain?: boolean;
-  };
-  timeline?: {
-    targetDate?: string;
-    durationMonths?: number;
-    raw?: string;
-    uncertain?: boolean;
-  };
-  teamSize?: number;
-  industry?: string;
+  features: CanonicalFeature[]
+  integrations: string[]
+  platforms: string[]
+  authRequirements: string | null
+  realtimeRequirements: string | null
+  adminPanelRequirements: string | null
+  targetUsers: string | null
+  userScale: string | null
+  businessModel: 'B2B' | 'B2C' | 'marketplace' | 'internal' | null
+  timelineExpectation: string | null
+  budgetRange: BudgetRange | null
+  clientTechPreferences: TechPreference | null
+  compliance: string[]
+  technicalConstraints: string | null
+  workflows: Workflow[]
+  userRoles: UserRole[]
+  featuresToRemove: string[] // canonical IDs to remove from state
+  assumptions: string[]
+  newCanonicalEntries: Array<{
+    id: string
+    canonicalName: string
+    category: string
+    aliases: string[]
+  }>
 }
 
-// ── L3: State Merge ───────────────────────────────────────────────────────────
-
-export interface MergeOptions {
-  understanding?: SemanticUnderstanding; // Option B: intent-aware merge
-}
-
-// ── L4: Discovery ─────────────────────────────────────────────────────────────
-
-export interface DiscoveryQuestion {
-  id: string;
-  question: string;
-  rationale: string; // why this question matters (not shown to user)
-  category: 'scope' | 'technical' | 'business' | 'timeline' | 'integration';
-  priority: number; // 1 = highest
-}
+// ── L4 Output ───────────────────────────────────────────────────────────────
 
 export interface DiscoveryResult {
-  questions: DiscoveryQuestion[];
-  gapSummary: string; // brief summary of what's still unknown
+  strategy:
+    | 'clarify_scope'
+    | 'probe_complexity'
+    | 'resolve_contradiction'
+    | 'confirm_assumption'
+    | 'discover_workflow'
+    | 'ask_tech_preference'
+    | 'offer_summary'
+  targetField: string
+  reasoning: string
+  question: string
+  readyForSummary: boolean
 }
 
-// ── L5: Scoring ───────────────────────────────────────────────────────────────
+// ── SSE Events ───────────────────────────────────────────────────────────────
 
-export interface ScoreCard {
-  overall: number; // 0–100
-  dimensions: {
-    clarity: DimensionScore;
-    completeness: DimensionScore;
-    feasibility: DimensionScore;
-    alignment: DimensionScore;
-  };
-  readinessLevel: 'early' | 'developing' | 'ready' | 'proposal-ready';
-  summary: string;
+export type PipelineLayer = 'preflight' | 'L1' | 'L2' | 'L3' | 'L4' | 'L5' | 'L6'
+
+export type PipelineEventType =
+  | 'pipeline_start'
+  | 'layer_start'
+  | 'layer_complete'
+  | 'state_update'
+  | 'response'
+  | 'error'
+  | 'pipeline_complete'
+
+export interface PipelineEvent {
+  type: PipelineEventType
+  layer?: PipelineLayer
+  data?: unknown
+  timestamp: number
 }
 
-export interface DimensionScore {
-  score: number; // 0–100
-  evidence: string; // specific quote or fact from state that drove this score
-  gap?: string; // what would improve this score
+// ── Chat API ─────────────────────────────────────────────────────────────────
+
+export interface ChatRequest {
+  message: string
+  conversationId?: string
 }
 
-// ── L6: Proposal ─────────────────────────────────────────────────────────────
-
-export interface ProposalSection {
-  title: string;
-  content: string; // markdown
-}
-
-export interface ProposalResult {
-  sections: ProposalSection[];
-  generatedAt: string; // ISO timestamp
-  stateSnapshotId?: string; // for audit trail
-}
-
-// ── Orchestrator ─────────────────────────────────────────────────────────────
-
-export interface PipelineInput {
-  message: string;
-  projectId: string;
-  state: ProjectState;
-  conversationHistory: ConversationTurn[];
-}
-
-export interface PipelineOutput {
-  updatedState: ProjectState;
-  response: string; // AI reply to user
-  scoreCard: ScoreCard;
-  discoveryQuestions: DiscoveryQuestion[];
-  understanding: SemanticUnderstanding; // for debugging/SSE
-  turnDurationMs: number;
-}
-
-export interface ConversationTurn {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
+export interface ChatResponse {
+  conversationId: string
+  message: string
+  state: import('./project.js').ProjectRequirementState
+  intent: string
+  readyForProposal: boolean
 }

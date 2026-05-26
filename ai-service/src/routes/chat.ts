@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
-import type { PipelineInput } from '@dealghost/shared';
 
 export const chatRoute = new Hono();
 
