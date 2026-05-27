@@ -149,7 +149,8 @@ Return ONLY valid JSON. No explanation. No markdown fences.
 export function buildDiscoveryUserPrompt(
   state: ProjectRequirementState,
   l1: SemanticUnderstanding | null,
-  conversationHistory: string
+  conversationHistory: string,
+  lastBotQuestion?: string,
 ): string {
   const gaps = buildGapSummary(state)
   const assumptionsList = state.assumptions.slice(0, 5).map(a => `• ${a}`).join('\n') || '(none)'
@@ -175,7 +176,17 @@ export function buildDiscoveryUserPrompt(
     ? `⚡ MANDATORY: L1 detected intent = "questioning". The client asked a question or requested advice. You MUST use strategy "answer_question". Answer their question directly and helpfully (2-4 sentences), then pivot to the most important discovery question. Do NOT skip the answer and jump to discovery. This overrides the priority hierarchy below.\n\n`
     : ''
 
-  return `${intentOverride}## PROJECT STATE SUMMARY
+  // Hard "do not repeat" block — injected at the very top so it can't be missed
+  const noRepeatBlock = lastBotQuestion
+    ? `🚫 YOUR LAST QUESTION WAS:
+"${lastBotQuestion}"
+
+The client has now replied to that. Do NOT ask the same question or anything that covers the same topic. Move on to the next most important gap.
+
+`
+    : ''
+
+  return `${noRepeatBlock}${intentOverride}## PROJECT STATE SUMMARY
 - Type: ${state.projectType ?? 'unknown'}
 - Description: ${state.description ?? 'unknown'}
 - Platforms: ${state.platforms.length ? state.platforms.join(', ') : 'unknown'}

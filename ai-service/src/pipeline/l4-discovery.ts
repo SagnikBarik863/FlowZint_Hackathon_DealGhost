@@ -30,6 +30,8 @@ export interface L4Input {
   state: ProjectRequirementState
   l1Understanding: SemanticUnderstanding | null
   conversationHistory: string
+  /** The last question the bot asked — L4 must not repeat it */
+  lastBotQuestion?: string
 }
 
 export async function runL4Discovery(input: L4Input): Promise<DiscoveryResult> {
@@ -37,7 +39,8 @@ export async function runL4Discovery(input: L4Input): Promise<DiscoveryResult> {
   const userPrompt = buildDiscoveryUserPrompt(
     input.state,
     input.l1Understanding,
-    input.conversationHistory
+    input.conversationHistory,
+    input.lastBotQuestion,
   )
 
   return callClaudeJSON(

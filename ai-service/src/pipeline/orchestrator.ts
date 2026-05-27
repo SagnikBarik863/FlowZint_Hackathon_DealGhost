@@ -16,6 +16,8 @@ export interface PipelineInput {
   latestMessage: string
   conversationHistory: string
   currentState: ProjectRequirementState
+  /** Last question the bot asked — passed to L4 to prevent repetition */
+  lastBotQuestion?: string
 }
 
 export interface PipelineOutput {
@@ -81,6 +83,7 @@ export async function runFullPipeline(input: PipelineInput): Promise<PipelineOut
     state: updatedState,
     l1Understanding: l1,
     conversationHistory,
+    lastBotQuestion: input.lastBotQuestion,
   })
 
   const readyForProposal = l4.readyForSummary || updatedState.completenessScore >= 80

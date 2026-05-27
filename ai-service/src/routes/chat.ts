@@ -56,6 +56,10 @@ chatRoute.post('/', async (c) => {
     recentMessages.map((m) => ({ role: m.role.toLowerCase(), content: m.content }))
   )
 
+  // Last bot question — passed to L4 to prevent it asking the same thing twice
+  const lastBotMessage = [...recentMessages].reverse().find((m) => m.role === 'ASSISTANT')
+  const lastBotQuestion = lastBotMessage?.content ?? undefined
+
   // ── 4. Save user message to DB ────────────────────────────────────────────
   await prisma.message.create({
     data: { conversationId: convId, role: 'USER', content: message },
@@ -86,6 +90,7 @@ chatRoute.post('/', async (c) => {
       latestMessage: message,
       conversationHistory,
       currentState: state,
+      lastBotQuestion,
     })
   } catch (pipelineErr) {
     console.error('[pipeline] runFullPipeline failed:', pipelineErr)
