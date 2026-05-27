@@ -1,7 +1,9 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import { callGroq } from './groq';
 import { PROPOSAL_SYSTEM_PROMPT, buildProposalUserPrompt } from './prompts/proposal';
-import { ProjectRequirementState } from '@/types/project';
+import type { ProjectRequirementState } from '@/types/project';
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 const ProposalSchema = z.object({
   executiveSummary: z.string(),
@@ -23,12 +25,10 @@ const ProposalSchema = z.object({
   }),
   pricing: z.object({
     model: z.enum(['fixed', 'time_and_materials', 'retainer']),
-    breakdown: z.array(z.object({
-      item: z.string(),
-      costUsd: z.number(),
-    })),
-    totalUsd: z.number(),
-    currency: z.string(),
+    // Field name is costUsd for schema compat but values are INR
+    breakdown: z.array(z.object({ item: z.string(), costUsd: z.number() })),
+    totalUsd: z.number(),   // INR value despite the field name
+    currency: z.string(),   // Always "INR"
   }),
   techStack: z.object({
     frontend: z.string(),
@@ -48,8 +48,15 @@ const ProposalSchema = z.object({
 export type ProposalContent = z.infer<typeof ProposalSchema>;
 
 export async function generateProposal(state: ProjectRequirementState): Promise<ProposalContent> {
-  const userPrompt = buildProposalUserPrompt(state);
-  const raw = await callGroq(PROPOSAL_SYSTEM_PROMPT, userPrompt, true);
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 4000,
+    temperature: 0.3,
+    system: PROPOSAL_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: buildProposalUserPrompt(state) }],
+  });
+
+  const raw = message.content[0].type === 'text' ? message.content[0].text : '';
 
   let parsed: unknown;
   try {
@@ -62,7 +69,7 @@ export async function generateProposal(state: ProjectRequirementState): Promise<
 
   const result = ProposalSchema.safeParse(parsed);
   if (!result.success) {
-    console.error('[proposal] Zod validation failed:', result.error.flatten());
+    console.error('[proposal] schema validation failed:', result.error.flatten());
     throw new Error('Proposal generation failed — schema validation error');
   }
 
