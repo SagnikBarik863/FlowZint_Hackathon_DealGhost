@@ -11,6 +11,46 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable';
+import type { ProjectRequirementState } from '@/types/project';
+
+// ── Feature summary message ────────────────────────────────────────────────────
+
+function buildFeatureSummaryMessage(state: ProjectRequirementState): string {
+  const lines: string[] = [];
+
+  const projectLabel = state.projectName
+    ? `**${state.projectName}**`
+    : state.projectType
+    ? `your **${state.projectType.replace(/_/g, ' ')}**`
+    : 'your project';
+
+  lines.push(`Alright, I think I have a solid picture of ${projectLabel}. Here's everything I've captured so far:\n`);
+
+  if (state.projectType) {
+    lines.push(`**Type:** ${state.projectType.replace(/_/g, ' ')}`);
+  }
+  if (state.platforms.length) {
+    lines.push(`**Platforms:** ${state.platforms.join(', ')}`);
+  }
+  if (state.targetUsers) {
+    lines.push(`**For:** ${state.targetUsers}`);
+  }
+  if (state.timelineExpectation) {
+    lines.push(`**Timeline:** ${state.timelineExpectation}`);
+  }
+
+  if (state.features.length > 0) {
+    lines.push('\n**Features:**');
+    state.features.forEach((f) => {
+      const icon = f.priority === 'MUST' ? '🔴' : f.priority === 'SHOULD' ? '🟡' : '🟢';
+      lines.push(`${icon} ${f.canonicalId.replace(/_/g, ' ')} *(${f.priority})*`);
+    });
+  }
+
+  lines.push('\nDoes this capture everything? You can still tell me if anything is missing or wrong. When you\'re happy with the list, hit **Generate Proposal** and I\'ll put together a full scoped estimate for you! 🚀');
+
+  return lines.join('\n');
+}
 
 const WELCOME_MESSAGE: ChatMessage = {
   role: 'assistant',
@@ -32,6 +72,7 @@ export default function Home() {
   // Track how many messages the client has sent — used to gate the proposal button
   const [userMessageCount, setUserMessageCount] = useState(0);
   const [readyForProposal, setReadyForProposal] = useState(false);
+  const [featuresConfirmed, setFeaturesConfirmed] = useState(false);
   const [customerEmail, setCustomerEmail] = useState<string | null>(null);
   const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
 
@@ -72,13 +113,23 @@ export default function Home() {
 
       if (!conversationId) setConversationId(data.conversationId);
       setProjectState(data.state);
-      if (data.readyForProposal && !readyForProposal) {
+      const justBecameReady = data.readyForProposal && !readyForProposal;
+      if (justBecameReady) {
         setReadyForProposal(true);
       }
       if (typeof data.userMessageCount === 'number') {
         setUserMessageCount(data.userMessageCount);
       }
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+      // When first becoming ready, replace the pipeline's terse "ready" message
+      // with a rich feature summary so the user sees exactly what was captured.
+      if (justBecameReady) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: buildFeatureSummaryMessage(data.state) },
+        ]);
+      } else {
+        setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -190,6 +241,7 @@ export default function Home() {
                 setIsPanelOpen(false);
                 setUserMessageCount(0);
                 setReadyForProposal(false);
+                setFeaturesConfirmed(false);
                 setCustomerEmail(null);
                 setIsSubmittingEmail(false);
               }}
@@ -223,9 +275,11 @@ export default function Home() {
             onTogglePanel={() => setIsPanelOpen((v) => !v)}
             onGenerateProposal={generateProposal}
             isGeneratingProposal={isGeneratingProposal}
-            emailCollectionMode={readyForProposal && !customerEmail}
+            emailCollectionMode={readyForProposal && featuresConfirmed && !customerEmail}
             onEmailSubmit={handleEmailSubmit}
             isSubmittingEmail={isSubmittingEmail}
+            showProposalButton={readyForProposal && !featuresConfirmed && !customerEmail}
+            onConfirmFeatures={() => setFeaturesConfirmed(true)}
           />
         </ResizablePanel>
 

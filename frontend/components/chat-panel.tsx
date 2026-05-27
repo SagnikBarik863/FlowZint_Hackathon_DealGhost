@@ -31,6 +31,10 @@ interface ChatPanelProps {
   onEmailSubmit?: (email: string) => void;
   /** Shows loading state on the email submit button */
   isSubmittingEmail?: boolean;
+  /** When true shows a "Generate Proposal" button below the chat input */
+  showProposalButton?: boolean;
+  /** Called when user clicks the Generate Proposal button */
+  onConfirmFeatures?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -76,6 +80,8 @@ export function ChatPanel({
   emailCollectionMode = false,
   onEmailSubmit,
   isSubmittingEmail = false,
+  showProposalButton = false,
+  onConfirmFeatures,
 }: ChatPanelProps) {
   const bottomRef   = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -304,9 +310,18 @@ export function ChatPanel({
                 <Send size={14} />
               </button>
             </div>
-            <p className="text-[10px] text-slate-700 text-center mt-2">
-              Enter to send · Shift+Enter for new line
-            </p>
+            {showProposalButton ? (
+              <button
+                onClick={onConfirmFeatures}
+                className="w-full mt-2 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white transition-all duration-200 shadow-lg shadow-blue-900/30 hover:scale-[1.01] active:scale-[0.99]"
+              >
+                ✦ Generate Proposal →
+              </button>
+            ) : (
+              <p className="text-[10px] text-slate-700 text-center mt-2">
+                Enter to send · Shift+Enter for new line
+              </p>
+            )}
           </>
         )}
       </div>
