@@ -382,9 +382,11 @@ function FeaturesTab({ state }: { state: ProjectRequirementState }) {
                 {feature.priority}
               </Badge>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-slate-200">{feature.name}</p>
-                {feature.description && (
-                  <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{feature.description}</p>
+                <p className="text-xs font-medium text-slate-200 capitalize">
+                  {feature.canonicalId.replace(/_/g, ' ')}
+                </p>
+                {feature.rawText && (
+                  <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{feature.rawText}</p>
                 )}
               </div>
             </div>
