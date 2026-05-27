@@ -27,7 +27,7 @@ export async function POST(
     return NextResponse.json({ error: 'No valid customer email on file' }, { status: 422 });
   }
 
-  const content = proposal.content as ProposalContent;
+  const content = proposal.content as unknown as ProposalContent;
   const reqs = proposal.analysis?.requirements as Record<string, unknown> | null;
   const projectName = (reqs?.projectName as string) ?? undefined;
 
