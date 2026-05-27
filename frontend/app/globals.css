@@ -59,3 +59,37 @@ body {
   color: #e2e8f0;
   font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
 }
+
+/* ── Chat UI animations ──────────────────────────────────────────────────── */
+
+/* Message fade-up on entry */
+@keyframes chatMessageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-message-enter {
+  animation: chatMessageEnter 0.22s ease forwards;
+}
+
+/* Typing indicator dots */
+@keyframes typingPulse {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: typingPulse 1.3s ease infinite;
+}

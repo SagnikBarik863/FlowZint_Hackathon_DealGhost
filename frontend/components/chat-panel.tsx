@@ -242,21 +242,24 @@ export function ChatPanel({
                 ref={emailRef}
                 type="email"
                 placeholder="your@email.com"
+                aria-label="Email address"
                 disabled={isSubmittingEmail}
                 className="flex-1 bg-transparent outline-none text-sm text-slate-200 placeholder:text-slate-600 disabled:opacity-50"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && emailRef.current?.value && onEmailSubmit) {
-                    onEmailSubmit(emailRef.current.value);
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const val = emailRef.current?.value.trim();
+                    if (val && onEmailSubmit) onEmailSubmit(val);
                   }
                 }}
               />
               <button
                 onClick={() => {
-                  if (emailRef.current?.value && onEmailSubmit) {
-                    onEmailSubmit(emailRef.current.value);
-                  }
+                  const val = emailRef.current?.value.trim();
+                  if (val && onEmailSubmit) onEmailSubmit(val);
                 }}
                 disabled={isSubmittingEmail}
+                aria-label="Submit email"
                 className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white transition-all duration-200 disabled:opacity-50"
               >
                 <Send size={14} />

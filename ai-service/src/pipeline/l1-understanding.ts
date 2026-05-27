@@ -13,6 +13,7 @@ const SemanticUnderstandingSchema = z.object({
     'elaborating', 'questioning', 'done', 'confirming',
   ]),
   businessDomain: z.string(),
+  detectedLanguage: z.enum(['english', 'hindi', 'hinglish', 'mixed']).default('english'),
   keyEntities: z.array(
     z.object({
       type: z.enum(['feature', 'integration', 'constraint', 'person', 'system']),

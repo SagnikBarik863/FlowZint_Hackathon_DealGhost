@@ -15,6 +15,8 @@ const DiscoveryResultSchema = z.object({
     'discover_workflow',
     'ask_tech_preference',
     'offer_summary',
+    'answer_question',
+    'answer_services',
   ]),
   targetField: z.string(),
   reasoning: z.string(),
@@ -43,7 +45,7 @@ export async function runL4Discovery(input: L4Input): Promise<DiscoveryResult> {
       model: MODELS.L4_DISCOVERY,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
-      maxTokens: 600,
+      maxTokens: 900,
       temperature: 0.2, // slight creativity for varied question phrasing
     },
     (raw) => DiscoveryResultSchema.parse(JSON.parse(raw)) as DiscoveryResult

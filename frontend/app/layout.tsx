@@ -6,9 +6,9 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'DealGhost — AI Pre-Sales Intelligence',
+  title: 'Team CheatGPT — Custom Software Development Studio',
   description:
-    'AI-powered pre-sales solution architect that converts client conversations into structured project intelligence and proposal-ready artifacts.',
+    'We build web apps, mobile apps, SaaS platforms, and marketplaces. AI-powered scoping, senior engineers, and proposals you can actually trust.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

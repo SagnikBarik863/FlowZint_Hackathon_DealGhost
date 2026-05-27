@@ -13,6 +13,8 @@ export interface SemanticUnderstanding {
     | 'done'
     | 'confirming'
   businessDomain: string
+  /** Language the client wrote in — used by L4 to respond in the same language */
+  detectedLanguage: 'english' | 'hindi' | 'hinglish' | 'mixed'
   keyEntities: Array<{
     type: 'feature' | 'integration' | 'constraint' | 'person' | 'system'
     value: string
@@ -65,9 +67,11 @@ export interface DiscoveryResult {
     | 'discover_workflow'
     | 'ask_tech_preference'
     | 'offer_summary'
+    | 'answer_question'   // client asked something — answer it, then continue
+    | 'answer_services'   // client asked about agency services
   targetField: string
   reasoning: string
-  question: string
+  question: string       // the response to send (answer + follow-up, or just follow-up)
   readyForSummary: boolean
 }
 
