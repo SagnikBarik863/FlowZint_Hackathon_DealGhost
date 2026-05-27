@@ -80,11 +80,27 @@ chatRoute.post('/', async (c) => {
   }
 
   // ── 7. Full pipeline: L1 → L2 → L3 → L4 ─────────────────────────────────
-  const result = await runFullPipeline({
-    latestMessage: message,
-    conversationHistory,
-    currentState: state,
-  })
+  let result: Awaited<ReturnType<typeof runFullPipeline>>
+  try {
+    result = await runFullPipeline({
+      latestMessage: message,
+      conversationHistory,
+      currentState: state,
+    })
+  } catch (pipelineErr) {
+    console.error('[pipeline] runFullPipeline failed:', pipelineErr)
+    const fallback = "I'm having a moment — could you send that again? 🙏"
+    await prisma.message.create({
+      data: { conversationId: convId, role: 'ASSISTANT', content: fallback },
+    })
+    return c.json({
+      conversationId: convId,
+      message: fallback,
+      state,
+      intent,
+      readyForProposal: false,
+    })
+  }
 
   // ── 8. Save state to Redis ────────────────────────────────────────────────
   await saveState(convId, result.state)
