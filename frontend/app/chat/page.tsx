@@ -1,0 +1,254 @@
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { ChatPanel, ChatMessage } from '@/components/chat-panel';
+import { IntelligencePanel } from '@/components/intelligence-panel';
+import { ProposalView } from '@/components/proposal-view';
+import { ProjectRequirementState } from '@/types/project';
+import { ProposalContent } from '@/types/proposal';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable';
+
+const WELCOME_MESSAGE: ChatMessage = {
+  role: 'assistant',
+  content:
+    "Hey! 👋 I'm DealGhost, your AI project advisor at Team CheatGPT.\n\nI'm here to understand exactly what you want to build and put together a real, detailed proposal for you — no generic quotes, no vague estimates.\n\nSo, what are you looking to build? Tell me about your idea! 🚀",
+};
+
+export default function Home() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessionKey, setSessionKey] = useState(0);
+  const [input, setInput] = useState('');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [projectState, setProjectState] = useState<ProjectRequirementState | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [proposal, setProposal] = useState<ProposalContent | null>(null);
+  const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
+  // isPanelOpen controls whether the intelligence panel is visible
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  // Track how many messages the client has sent — used to gate the proposal button
+  const [userMessageCount, setUserMessageCount] = useState(0);
+  const [readyForProposal, setReadyForProposal] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState<string | null>(null);
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
+
+  // Animate welcome message in after a short delay on mount and after each new session
+  useEffect(() => {
+    setMessages([]);
+    const t = setTimeout(() => setMessages([WELCOME_MESSAGE]), 520);
+    return () => clearTimeout(t);
+  }, [sessionKey]);
+
+  const sendMessage = useCallback(async () => {
+    const text = input.trim();
+    if (!text || isLoading) return;
+
+    setInput('');
+    setMessages((prev) => [...prev, { role: 'user', content: text }]);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          conversationId: conversationId ?? undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: 'Something went wrong. Please try again.' },
+        ]);
+        return;
+      }
+
+      if (!conversationId) setConversationId(data.conversationId);
+      setProjectState(data.state);
+      if (data.readyForProposal && !readyForProposal) {
+        setReadyForProposal(true);
+      }
+      if (typeof data.userMessageCount === 'number') {
+        setUserMessageCount(data.userMessageCount);
+      }
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Network error. Please try again.' },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [input, isLoading, conversationId, readyForProposal]);
+
+  const handleEmailSubmit = useCallback(async (email: string) => {
+    if (!conversationId || isSubmittingEmail) return;
+    setIsSubmittingEmail(true);
+    try {
+      const res = await fetch('/api/lead/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to save email');
+      setCustomerEmail(email);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant' as const,
+          content: `Perfect! 🎉 Your project details have been sent to **Team CheatGPT**.\n\nWe're reviewing your requirements now and will send a detailed proposal to **${email}** within 24 hours.\n\nFeel free to ask me anything else in the meantime!`,
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant' as const, content: 'Something went wrong saving your email. Please try again.' },
+      ]);
+    } finally {
+      setIsSubmittingEmail(false);
+    }
+  }, [conversationId, isSubmittingEmail]);
+
+  const generateProposal = useCallback(async () => {
+    if (!conversationId || isGeneratingProposal) return;
+    setIsGeneratingProposal(true);
+
+    try {
+      const res = await fetch('/api/proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: "I wasn't able to generate the proposal. Let's continue gathering requirements.",
+          },
+        ]);
+        return;
+      }
+
+      setProposal(data.proposal);
+      // Auto-open the panel so the proposal is immediately visible
+      setIsPanelOpen(true);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Failed to generate proposal. Please try again.' },
+      ]);
+    } finally {
+      setIsGeneratingProposal(false);
+    }
+  }, [conversationId, isGeneratingProposal]);
+
+  return (
+    <div className="flex flex-col h-screen bg-[#0d1117]">
+      {/* Top Nav */}
+      <nav className="h-12 bg-[#080d14]/90 backdrop-blur-sm border-b border-[#1f2d3d] flex items-center justify-between px-6 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <a
+            href="/"
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            ← Home
+          </a>
+          <span className="text-[#1f2d3d]">|</span>
+          <span className="text-sm font-bold text-slate-100 tracking-tight">Team CheatGPT</span>
+          <span className="hidden sm:block text-[10px] font-medium text-blue-400 bg-blue-950/50 px-2 py-0.5 rounded-full border border-blue-900">
+            Powered by DealGhost
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          {projectState && (
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Pipeline active
+            </div>
+          )}
+          {conversationId && (
+            <button
+              onClick={() => {
+                setSessionKey((k) => k + 1);
+                setConversationId(null);
+                setProjectState(null);
+                setProposal(null);
+                setInput('');
+                setIsPanelOpen(false);
+                setUserMessageCount(0);
+                setReadyForProposal(false);
+                setCustomerEmail(null);
+                setIsSubmittingEmail(false);
+              }}
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors border border-[#1f2d3d] hover:border-slate-600 px-2.5 py-1 rounded-md"
+            >
+              ↺ New session
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {/*
+        ResizablePanelGroup replaces the old hard-coded flex split.
+        key={String(isPanelOpen)} forces re-mount on toggle so panel sizes reset cleanly.
+      */}
+      <ResizablePanelGroup
+        key={String(isPanelOpen)}
+        orientation="horizontal"
+        className="flex-1 overflow-hidden"
+      >
+        <ResizablePanel defaultSize={isPanelOpen ? 60 : 100} minSize={35}>
+          <ChatPanel
+            messages={messages}
+            input={input}
+            isLoading={isLoading}
+            completeness={projectState?.completenessScore ?? 0}
+            userMessageCount={userMessageCount}
+            isPanelOpen={isPanelOpen}
+            onInputChange={setInput}
+            onSend={sendMessage}
+            onTogglePanel={() => setIsPanelOpen((v) => !v)}
+            onGenerateProposal={generateProposal}
+            isGeneratingProposal={isGeneratingProposal}
+            emailCollectionMode={readyForProposal && !customerEmail}
+            onEmailSubmit={handleEmailSubmit}
+            isSubmittingEmail={isSubmittingEmail}
+          />
+        </ResizablePanel>
+
+        {isPanelOpen && (
+          <>
+            <ResizableHandle
+              withHandle
+              className="bg-[#1f2d3d] w-px hover:bg-blue-600 transition-colors"
+            />
+            <ResizablePanel defaultSize={40} minSize={25}>
+              {proposal ? (
+                <ProposalView
+                  proposal={proposal}
+                  projectName={projectState?.projectName}
+                  onClose={() => setProposal(null)}
+                />
+              ) : (
+                <IntelligencePanel state={projectState} />
+              )}
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
+    </div>
+  );
+}
