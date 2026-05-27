@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     where: { conversationId },
     include: { conversation: { select: { leadId: true } } },
   });
-  if (!analysis) {
+  if (!analysis || !analysis.conversation?.leadId) {
     return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
   }
 
