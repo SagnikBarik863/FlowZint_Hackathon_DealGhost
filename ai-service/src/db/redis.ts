@@ -59,15 +59,25 @@ import type { ProjectRequirementState } from '@dealghost/shared';
 
 /**
  * Load a ProjectRequirementState by conversationId.
- * Returns null if no state is found (new conversation).
+ * Returns null if not found OR if Redis is unavailable (falls back to Supabase in caller).
  */
 export async function loadState(conversationId: string): Promise<ProjectRequirementState | null> {
-  return redisGet<ProjectRequirementState>(`state:${conversationId}`);
+  try {
+    return await redisGet<ProjectRequirementState>(`state:${conversationId}`);
+  } catch (err) {
+    console.warn('[Redis] loadState failed, falling back to DB:', (err as Error).message);
+    return null;
+  }
 }
 
 /**
  * Persist a ProjectRequirementState by conversationId with 7-day TTL.
+ * Fails silently — Supabase is the source of truth.
  */
 export async function saveState(conversationId: string, state: ProjectRequirementState): Promise<void> {
-  await redisSet(`state:${conversationId}`, state);
+  try {
+    await redisSet(`state:${conversationId}`, state);
+  } catch (err) {
+    console.warn('[Redis] saveState failed (non-fatal):', (err as Error).message);
+  }
 }
