@@ -72,6 +72,7 @@ export default function LandingPage() {
             <a href="#services" className="hover:text-slate-100 transition-colors">Services</a>
             <a href="#process"  className="hover:text-slate-100 transition-colors">How It Works</a>
             <a href="#why"      className="hover:text-slate-100 transition-colors">Why Us</a>
+            <a href="/admin" className="hover:text-slate-100 transition-colors text-slate-600 text-xs">Admin</a>
           </div>
           <Link
             href="/chat"
