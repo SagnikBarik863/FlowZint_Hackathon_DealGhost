@@ -1,11 +1,27 @@
 import { Hono } from 'hono'
 import { createEmptyState } from '@dealghost/shared'
 import type { ChatRequest } from '@dealghost/shared'
-import { callGroqIntent } from '../models/groq.js'
+import { callGroqIntent, callGroqModerate } from '../models/groq.js'
 import { runFullPipeline } from '../pipeline/orchestrator.js'
 import { formatConversationHistory } from '../state/manager.js'
 import { loadState, saveState } from '../db/redis.js'
 import { prisma } from '../db/prisma.js'
+
+function buildRefusalMessage(category: string, contactEmail: string): string {
+  const categoryLabel: Record<string, string> = {
+    illegal_activity: 'requests involving illegal activities',
+    dangerous_content: 'requests involving dangerous or harmful content',
+    adult_content: 'adult or explicit content',
+    off_topic: 'topics unrelated to software development',
+  }
+  const reason = categoryLabel[category] ?? 'that type of request'
+
+  return `I'm here to help with **software project discovery** — scoping out apps, platforms, APIs, and digital products. I'm not able to assist with ${reason}.
+
+If you have a **software project** in mind, I'd love to hear about it — just describe what you're looking to build!
+
+For anything else, feel free to reach the team directly: **${contactEmail}**`
+}
 
 export const chatRoute = new Hono()
 
@@ -56,19 +72,39 @@ chatRoute.post('/', async (c) => {
     recentMessages.map((m) => ({ role: m.role.toLowerCase(), content: m.content }))
   )
 
-  // Last bot question — passed to L4 to prevent it asking the same thing twice
-  const lastBotMessage = [...recentMessages].reverse().find((m) => m.role === 'ASSISTANT')
-  const lastBotQuestion = lastBotMessage?.content ?? undefined
+  // Last 3 bot questions — passed to L4 to prevent repeating recently asked topics
+  const recentBotQuestions = [...recentMessages]
+    .reverse()
+    .filter((m) => m.role === 'ASSISTANT')
+    .slice(0, 3)
+    .map((m) => m.content)
 
   // ── 4. Save user message to DB ────────────────────────────────────────────
   await prisma.message.create({
     data: { conversationId: convId, role: 'USER', content: message },
   })
 
-  // ── 5. Pre-flight intent check (Groq — fast/cheap) ────────────────────────
+  // ── 5. Content moderation (Groq 8B — fast, runs before pipeline) ────────────
+  const moderation = await callGroqModerate(message)
+  if (moderation.flagged) {
+    const contactEmail = process.env.CONTACT_EMAIL ?? 'hello@dealghost.io'
+    const refusal = buildRefusalMessage(moderation.category, contactEmail)
+    await prisma.message.create({
+      data: { conversationId: convId, role: 'ASSISTANT', content: refusal },
+    })
+    return c.json({
+      conversationId: convId,
+      message: refusal,
+      state,
+      intent: 'MODERATED',
+      readyForProposal: false,
+    })
+  }
+
+  // ── 6. Pre-flight intent check (Groq — fast/cheap) ────────────────────────
   const intent = await callGroqIntent(message, conversationHistory)
 
-  // ── 6. Route: READY_FOR_PROPOSAL bypasses the pipeline ───────────────────
+  // ── 7. Route: READY_FOR_PROPOSAL bypasses the pipeline ───────────────────
   if (intent === 'READY_FOR_PROPOSAL') {
     const responseMsg = "Great — I have enough information to generate a detailed proposal. Click **Generate Proposal** when you're ready."
     await prisma.message.create({
@@ -90,7 +126,7 @@ chatRoute.post('/', async (c) => {
       latestMessage: message,
       conversationHistory,
       currentState: state,
-      lastBotQuestion,
+      recentBotQuestions,
     })
   } catch (pipelineErr) {
     console.error('[pipeline] runFullPipeline failed:', pipelineErr)
