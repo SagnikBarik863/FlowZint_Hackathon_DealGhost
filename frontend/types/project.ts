@@ -8,9 +8,17 @@ export type ComplexityLevel = 'SIMPLE' | 'STANDARD' | 'COMPLEX' | 'ENTERPRISE';
 export type MissingInfoPriority = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export interface Feature {
-  name: string;
-  description: string;
+  // Legacy fields (old pipeline)
+  name?: string;
+  description?: string;
+  // Current pipeline fields (CanonicalFeature shape from ai-service)
+  canonicalId: string;
+  rawText: string;
+  confidence: number;
+  category: string;
   priority: Priority;
+  isConfirmed: boolean;
+  dependencies: string[];
 }
 
 export interface MissingField {

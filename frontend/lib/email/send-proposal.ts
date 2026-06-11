@@ -1,8 +1,18 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import type { ProposalContent } from '@/types/proposal';
 import { generateProposalPdf } from './proposal-pdf';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+function getTransporter() {
+  return nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.BREVO_SMTP_USER!,
+      pass: process.env.BREVO_SMTP_KEY!,
+    },
+  });
+}
 
 export async function sendProposalEmail(
   toEmail: string,
@@ -14,10 +24,9 @@ export async function sendProposalEmail(
     ? `proposal-${projectName.toLowerCase().replace(/\s+/g, '-')}.pdf`
     : 'proposal.pdf';
 
-  // Generate PDF attachment
   const pdfBuffer = await generateProposalPdf(proposal, toEmail);
 
-  const emailBody = `Hi,
+  const text = `Hi,
 
 Thank you for chatting with us! Please find your project proposal attached as a PDF.
 
@@ -28,21 +37,19 @@ Looking forward to working with you!
 Team CheatGPT
 sagnikbarik456@gmail.com`;
 
-  const { error } = await resend.emails.send({
-    from: 'Team CheatGPT <onboarding@resend.dev>',
-    to: [toEmail],
-    cc: ['sagnikbarik456@gmail.com'],
+  const ADMIN_EMAIL = 'sagnikbarik456@gmail.com';
+  const transporter = getTransporter();
+  const info = await transporter.sendMail({
+    from: '"Team CheatGPT" <sagnikbarik456@gmail.com>',
+    to: toEmail,
+    cc: toEmail !== ADMIN_EMAIL ? ADMIN_EMAIL : undefined,
+    replyTo: ADMIN_EMAIL,
     subject,
-    text: emailBody,
-    attachments: [
-      {
-        filename,
-        content: pdfBuffer,
-      },
-    ],
+    text,
+    attachments: [{ filename, content: pdfBuffer }],
   });
 
-  if (error) {
-    throw new Error(`Resend error: ${error.message}`);
+  if (!info.messageId) {
+    throw new Error('Email sent but no messageId returned');
   }
 }

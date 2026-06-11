@@ -29,7 +29,7 @@ export function mergeState(
   // Handle explicit feature removals first (user said "remove X")
   if (extracted.featuresToRemove && extracted.featuresToRemove.length > 0) {
     const toRemove = new Set(extracted.featuresToRemove.map((n) => n.toLowerCase()));
-    next.features = next.features.filter((f) => !toRemove.has(f.name.toLowerCase()));
+    next.features = next.features.filter((f) => !toRemove.has((f.canonicalId ?? f.name ?? '').toLowerCase()));
   }
 
   for (const [key, value] of Object.entries(extracted)) {
@@ -41,9 +41,9 @@ export function mergeState(
       // Merge arrays: for features/missingInformation use name dedup,
       // for simple string arrays use Set dedup
       if (k === 'features') {
-        const existingNames = new Set((next.features ?? []).map((f) => f.name.toLowerCase()));
+        const existingNames = new Set((next.features ?? []).map((f) => (f.canonicalId ?? f.name ?? '').toLowerCase()));
         const newFeatures = (value as typeof next.features).filter(
-          (f) => !existingNames.has(f.name.toLowerCase()),
+          (f) => !existingNames.has((f.canonicalId ?? f.name ?? '').toLowerCase()),
         );
         next.features = [...(next.features ?? []), ...newFeatures];
       } else if (k === 'platforms' || k === 'integrations' || k === 'compliance') {

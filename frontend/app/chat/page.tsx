@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { ChatPanel, ChatMessage } from '@/components/chat-panel';
 import { IntelligencePanel } from '@/components/intelligence-panel';
 import { ProposalView } from '@/components/proposal-view';
-import { ProjectRequirementState } from '@/types/project';
 import { ProposalContent } from '@/types/proposal';
 import {
   ResizablePanelGroup,
@@ -43,7 +42,7 @@ function buildFeatureSummaryMessage(state: ProjectRequirementState): string {
     lines.push('\n**Features:**');
     state.features.forEach((f) => {
       const icon = f.priority === 'MUST' ? '🔴' : f.priority === 'SHOULD' ? '🟡' : '🟢';
-      lines.push(`${icon} ${f.canonicalId.replace(/_/g, ' ')} *(${f.priority})*`);
+      lines.push(`${icon} ${(f.canonicalId ?? f.name ?? '').replace(/_/g, ' ')} *(${f.priority})*`);
     });
   }
 
@@ -76,8 +75,36 @@ export default function Home() {
   const [customerEmail, setCustomerEmail] = useState<string | null>(null);
   const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
 
-  // Animate welcome message in after a short delay on mount and after each new session
+  // On mount: restore previous conversation from localStorage
   useEffect(() => {
+    const savedId = localStorage.getItem('dealghost_conv_id');
+    if (!savedId) return;
+
+    setIsLoading(true);
+    fetch(`/api/chat?conversationId=${savedId}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data: { messages: { role: 'user' | 'assistant'; content: string }[]; state: ProjectRequirementState | null }) => {
+        if (data.messages?.length > 0) {
+          setConversationId(savedId);
+          setMessages(data.messages);
+          if (data.state) setProjectState(data.state as ProjectRequirementState);
+        } else {
+          localStorage.removeItem('dealghost_conv_id');
+        }
+      })
+      .catch(() => localStorage.removeItem('dealghost_conv_id'))
+      .finally(() => setIsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist conversationId to localStorage whenever it is set
+  useEffect(() => {
+    if (conversationId) localStorage.setItem('dealghost_conv_id', conversationId);
+  }, [conversationId]);
+
+  // Animate welcome message in after a short delay — skip on initial mount if we have a saved session
+  useEffect(() => {
+    if (sessionKey === 0 && localStorage.getItem('dealghost_conv_id')) return;
     setMessages([]);
     const t = setTimeout(() => setMessages([WELCOME_MESSAGE]), 520);
     return () => clearTimeout(t);
@@ -230,26 +257,25 @@ export default function Home() {
               Pipeline active
             </div>
           )}
-          {conversationId && (
-            <button
-              onClick={() => {
-                setSessionKey((k) => k + 1);
-                setConversationId(null);
-                setProjectState(null);
-                setProposal(null);
-                setInput('');
-                setIsPanelOpen(false);
-                setUserMessageCount(0);
-                setReadyForProposal(false);
-                setFeaturesConfirmed(false);
-                setCustomerEmail(null);
-                setIsSubmittingEmail(false);
-              }}
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors border border-[#1f2d3d] hover:border-slate-600 px-2.5 py-1 rounded-md"
-            >
-              ↺ New session
-            </button>
-          )}
+          <button
+            onClick={() => {
+              localStorage.removeItem('dealghost_conv_id');
+              setSessionKey((k) => k + 1);
+              setConversationId(null);
+              setProjectState(null);
+              setProposal(null);
+              setInput('');
+              setIsPanelOpen(false);
+              setUserMessageCount(0);
+              setReadyForProposal(false);
+              setFeaturesConfirmed(false);
+              setCustomerEmail(null);
+              setIsSubmittingEmail(false);
+            }}
+            className="text-xs text-slate-400 hover:text-slate-100 transition-colors border border-[#1f2d3d] hover:border-slate-500 px-3 py-1 rounded-md flex items-center gap-1.5"
+          >
+            <span className="text-[11px]">＋</span> New Chat
+          </button>
         </div>
       </nav>
 
