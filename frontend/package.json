@@ -9,11 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.55.1",
     "@base-ui/react": "^1.5.0",
     "@dealghost/shared": "*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.20.0",
     "axios": "^1.16.1",
     "class-variance-authority": "^0.7.1",
@@ -21,6 +21,8 @@
     "groq-sdk": "^1.2.0",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
+    "nodemailer": "^8.0.9",
+    "openai": "^6.42.0",
     "pdfkit": "^0.18.0",
     "pg": "^8.21.0",
     "prisma": "^7.8.0",

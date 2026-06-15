@@ -36,6 +36,12 @@ Thumbs.db
 *.swp
 *.swo
 
+# ── AI tooling (local dev only, not part of the project) ──────────────────────
+.claude/
+.superpowers/
+CLAUDE.md
+AGENTS.md
+
 # ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
 npm-debug.log*
