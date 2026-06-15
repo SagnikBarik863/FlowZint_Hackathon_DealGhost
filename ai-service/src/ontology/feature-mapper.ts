@@ -35,23 +35,14 @@ export function formatOntologyForPrompt(entries: FeatureOntologyEntry[]): string
 
   const lines: string[] = [
     '## CANONICAL FEATURE ONTOLOGY',
-    'Map extracted features to these canonical IDs. Each entry shows: ID | Name | Description | Aliases | Complexity | Hours | related (optional)',
+    'Map extracted features to these canonical IDs. Each entry: ID | Name | Aliases',
     '',
   ]
 
   for (const [category, features] of byCategory) {
     lines.push(`### ${category.toUpperCase()}`)
     for (const f of features) {
-      const hours =
-        f.typicalHoursMin && f.typicalHoursMax
-          ? `${f.typicalHoursMin}–${f.typicalHoursMax}h`
-          : 'varies'
-      const desc = f.description ? ` | ${f.description}` : ''
-      const deps = f.dependencies.length > 0 ? ` | requires: ${f.dependencies.join(', ')}` : ''
-      const related = f.relatedFeatures.length > 0 ? ` | related: ${f.relatedFeatures.join(', ')}` : ''
-      lines.push(
-        `- ${f.id} | "${f.canonicalName}"${desc} | aliases: [${f.aliases.join(', ')}] | ${f.typicalComplexity ?? 'MEDIUM'} | ${hours}${deps}${related}`
-      )
+      lines.push(`- ${f.id} | "${f.canonicalName}" | aliases: [${f.aliases.join(', ')}]`)
     }
     lines.push('')
   }

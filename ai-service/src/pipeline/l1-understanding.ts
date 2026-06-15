@@ -1,8 +1,7 @@
 import { z } from 'zod'
-import { callClaudeJSON } from '../models/claude.js'
+import { callGroqJSON, GROQ_INTENT_MODEL } from '../models/groq.js'
 import { buildUnderstandingSystemPrompt, buildUnderstandingUserPrompt } from '../prompts/understanding.js'
 import { compactStateForPrompt } from '../prompts/extraction.js'
-import { MODELS } from '../models/constants.js'
 import type { SemanticUnderstanding, ProjectRequirementState } from '@dealghost/shared'
 
 // ── Zod schema ───────────────────────────────────────────────────────────────
@@ -11,12 +10,12 @@ const SemanticUnderstandingSchema = z.object({
   semanticIntent: z.enum([
     'adding', 'correcting', 'removing', 'clarifying',
     'elaborating', 'questioning', 'done', 'confirming',
-  ]),
+  ]).catch('adding'),
   businessDomain: z.string(),
-  detectedLanguage: z.enum(['english', 'hindi', 'hinglish', 'mixed']).default('english'),
+  detectedLanguage: z.enum(['english', 'hindi', 'hinglish', 'mixed']).catch('english'),
   keyEntities: z.array(
     z.object({
-      type: z.enum(['feature', 'integration', 'constraint', 'person', 'system']),
+      type: z.enum(['feature', 'integration', 'constraint', 'person', 'system']).catch('feature'),
       value: z.string(),
     })
   ).default([]),
@@ -56,9 +55,9 @@ export async function runL1Understanding(input: L1Input): Promise<SemanticUnders
     compactStateForPrompt(input.currentState as unknown as Record<string, unknown>)
   )
 
-  return callClaudeJSON(
+  return callGroqJSON(
     {
-      model: MODELS.L1_UNDERSTANDING,
+      model: GROQ_INTENT_MODEL,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
       maxTokens: 800,

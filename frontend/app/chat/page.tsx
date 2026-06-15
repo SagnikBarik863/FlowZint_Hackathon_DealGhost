@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { ChatPanel, ChatMessage } from '@/components/chat-panel';
+import { ChatPanel, ChatMessage, type HistoryEntry } from '@/components/chat-panel';
 import { IntelligencePanel } from '@/components/intelligence-panel';
 import { ProposalView } from '@/components/proposal-view';
 import { ProposalContent } from '@/types/proposal';
@@ -11,6 +11,49 @@ import {
   ResizableHandle,
 } from '@/components/ui/resizable';
 import type { ProjectRequirementState } from '@/types/project';
+
+// ── History helpers ────────────────────────────────────────────────────────────
+
+const HISTORY_KEY = 'dealghost_history';
+const MAX_HISTORY = 20;
+
+function readHistory(): HistoryEntry[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
+  } catch { return []; }
+}
+
+function saveHistory(entries: HistoryEntry[]): void {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY)));
+}
+
+function buildHistoryEntry(
+  id: string,
+  msgs: ChatMessage[],
+  state: ProjectRequirementState | null,
+): HistoryEntry {
+  const firstUser = msgs.find((m) => m.role === 'user')?.content ?? '';
+  const last = msgs[msgs.length - 1];
+  return {
+    id,
+    title: state?.projectName ?? (firstUser.slice(0, 48) || 'New conversation'),
+    preview: last ? last.content.replace(/[*_#`[\]]/g, '').slice(0, 70) : '',
+    timestamp: Date.now(),
+  };
+}
+
+function upsertHistory(
+  entry: HistoryEntry,
+  setHistoryState: (entries: HistoryEntry[]) => void,
+): void {
+  const entries = readHistory();
+  const idx = entries.findIndex((e) => e.id === entry.id);
+  if (idx >= 0) entries[idx] = entry; else entries.unshift(entry);
+  saveHistory(entries);
+  setHistoryState(entries.slice(0, MAX_HISTORY));
+}
 
 // ── Feature summary message ────────────────────────────────────────────────────
 
@@ -23,7 +66,7 @@ function buildFeatureSummaryMessage(state: ProjectRequirementState): string {
     ? `your **${state.projectType.replace(/_/g, ' ')}**`
     : 'your project';
 
-  lines.push(`Alright, I think I have a solid picture of ${projectLabel}. Here's everything I've captured so far:\n`);
+  lines.push(`Okay — here's what I've got on ${projectLabel} so far:\n`);
 
   if (state.projectType) {
     lines.push(`**Type:** ${state.projectType.replace(/_/g, ' ')}`);
@@ -46,7 +89,7 @@ function buildFeatureSummaryMessage(state: ProjectRequirementState): string {
     });
   }
 
-  lines.push('\nDoes this capture everything? You can still tell me if anything is missing or wrong. When you\'re happy with the list, hit **Generate Proposal** and I\'ll put together a full scoped estimate for you! 🚀');
+  lines.push('\nDoes this look right? If anything\'s off or missing, just say so. When you\'re happy with it, hit **Generate Proposal** and I\'ll put together the full estimate. 🚀');
 
   return lines.join('\n');
 }
@@ -54,7 +97,7 @@ function buildFeatureSummaryMessage(state: ProjectRequirementState): string {
 const WELCOME_MESSAGE: ChatMessage = {
   role: 'assistant',
   content:
-    "Hey! 👋 I'm DealGhost, your AI project advisor at Team CheatGPT.\n\nI'm here to understand exactly what you want to build and put together a real, detailed proposal for you — no generic quotes, no vague estimates.\n\nSo, what are you looking to build? Tell me about your idea! 🚀",
+    "Hey 👋 I'm DealGhost — I help founders turn software ideas into real, scoped proposals.\n\nNo generic quotes, no guesswork. Just smart questions until we know exactly what you want to build — then a detailed proposal lands in your inbox.\n\nWhat's the idea?",
 };
 
 export default function Home() {
@@ -72,8 +115,11 @@ export default function Home() {
   const [userMessageCount, setUserMessageCount] = useState(0);
   const [readyForProposal, setReadyForProposal] = useState(false);
   const [featuresConfirmed, setFeaturesConfirmed] = useState(false);
+  // Once true, proposal buttons re-appear after every bot response until email submitted
+  const [stayReadyForProposal, setStayReadyForProposal] = useState(false);
   const [customerEmail, setCustomerEmail] = useState<string | null>(null);
   const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   // On mount: restore previous conversation from localStorage
   useEffect(() => {
@@ -88,6 +134,10 @@ export default function Home() {
           setConversationId(savedId);
           setMessages(data.messages);
           if (data.state) setProjectState(data.state as ProjectRequirementState);
+          upsertHistory(
+            buildHistoryEntry(savedId, data.messages, data.state as ProjectRequirementState | null),
+            setHistory,
+          );
         } else {
           localStorage.removeItem('dealghost_conv_id');
         }
@@ -95,6 +145,11 @@ export default function Home() {
       .catch(() => localStorage.removeItem('dealghost_conv_id'))
       .finally(() => setIsLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load history list on mount (sync, no async needed)
+  useEffect(() => {
+    setHistory(readHistory());
   }, []);
 
   // Persist conversationId to localStorage whenever it is set
@@ -141,22 +196,39 @@ export default function Home() {
       if (!conversationId) setConversationId(data.conversationId);
       setProjectState(data.state);
       const justBecameReady = data.readyForProposal && !readyForProposal;
-      if (justBecameReady) {
-        setReadyForProposal(true);
-      }
       if (typeof data.userMessageCount === 'number') {
         setUserMessageCount(data.userMessageCount);
       }
-      // When first becoming ready, replace the pipeline's terse "ready" message
-      // with a rich feature summary so the user sees exactly what was captured.
-      if (justBecameReady) {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: buildFeatureSummaryMessage(data.state) },
-        ]);
+
+      let responseMsg: string;
+      if (justBecameReady && data.intent === 'READY_FOR_PROPOSAL') {
+        // User explicitly said "generate proposal" — skip summary, go straight to email
+        setReadyForProposal(true);
+        setFeaturesConfirmed(true);
+        responseMsg = data.message as string;
+      } else if (justBecameReady) {
+        // Just crossed the completeness threshold — show feature summary + inline buttons
+        setReadyForProposal(true);
+        responseMsg = buildFeatureSummaryMessage(data.state);
       } else {
-        setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+        responseMsg = data.message as string;
       }
+      setMessages((prev) => [...prev, { role: 'assistant', content: responseMsg }]);
+
+      // Re-show proposal buttons after every response once user has been in "add more details" mode
+      if (stayReadyForProposal && !featuresConfirmed) {
+        setReadyForProposal(true);
+      }
+
+      const convId = conversationId ?? data.conversationId;
+      upsertHistory(
+        buildHistoryEntry(
+          convId,
+          [...messages, { role: 'user', content: text }, { role: 'assistant', content: responseMsg }],
+          data.state as ProjectRequirementState | null,
+        ),
+        setHistory,
+      );
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -165,7 +237,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, conversationId, readyForProposal]);
+  }, [input, isLoading, conversationId, readyForProposal, stayReadyForProposal, featuresConfirmed, messages]);
 
   const handleEmailSubmit = useCallback(async (email: string) => {
     if (!conversationId || isSubmittingEmail) return;
@@ -183,7 +255,7 @@ export default function Home() {
         ...prev,
         {
           role: 'assistant' as const,
-          content: `Perfect! 🎉 Your project details have been sent to **Team CheatGPT**.\n\nWe're reviewing your requirements now and will send a detailed proposal to **${email}** within 24 hours.\n\nFeel free to ask me anything else in the meantime!`,
+          content: `Perfect! 🎉 Your project details have been sent to **CheatGPT**.\n\nWe're reviewing your requirements now and will send a detailed proposal to **${email}** within 24 hours.\n\nFeel free to ask me anything else in the meantime!`,
         },
       ]);
     } catch {
@@ -233,6 +305,72 @@ export default function Home() {
     }
   }, [conversationId, isGeneratingProposal]);
 
+  const clearHistory = useCallback(() => {
+    // Keep only the current session entry (if one exists)
+    const entries = readHistory();
+    const kept = entries.filter((e) => e.id === conversationId);
+    saveHistory(kept);
+    setHistory(kept);
+  }, [conversationId]);
+
+  const deleteHistoryEntry = useCallback(async (id: string) => {
+    // Remove from localStorage immediately
+    const entries = readHistory().filter((e) => e.id !== id);
+    saveHistory(entries);
+    setHistory(entries);
+
+    // Delete from DB
+    try { await fetch(`/api/chat/${id}`, { method: 'DELETE' }); } catch { /* best-effort */ }
+
+    // If the deleted chat is the active one, reset to a fresh session
+    if (id === conversationId) {
+      localStorage.removeItem('dealghost_conv_id');
+      setSessionKey((k) => k + 1);
+      setConversationId(null);
+      setProjectState(null);
+      setProposal(null);
+      setInput('');
+      setIsPanelOpen(false);
+      setUserMessageCount(0);
+      setReadyForProposal(false);
+      setFeaturesConfirmed(false);
+      setStayReadyForProposal(false);
+      setCustomerEmail(null);
+      setIsSubmittingEmail(false);
+    }
+  }, [conversationId]);
+
+  const loadHistorySession = useCallback(async (id: string) => {
+    if (id === conversationId) return;
+    setIsLoading(true);
+    setMessages([]);
+    setProjectState(null);
+    setProposal(null);
+    setReadyForProposal(false);
+    setFeaturesConfirmed(false);
+    setStayReadyForProposal(false);
+    setCustomerEmail(null);
+    setIsSubmittingEmail(false);
+    setUserMessageCount(0);
+    setInput('');
+    setIsPanelOpen(false);
+
+    fetch(`/api/chat?conversationId=${id}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data: { messages: ChatMessage[]; state: ProjectRequirementState | null }) => {
+        if (data.messages?.length > 0) {
+          setConversationId(id);
+          localStorage.setItem('dealghost_conv_id', id);
+          setMessages(data.messages);
+          if (data.state) setProjectState(data.state as ProjectRequirementState);
+        } else {
+          setMessages([WELCOME_MESSAGE]);
+        }
+      })
+      .catch(() => setMessages([WELCOME_MESSAGE]))
+      .finally(() => setIsLoading(false));
+  }, [conversationId]);
+
   return (
     <div className="flex flex-col h-screen bg-[#0d1117]">
       {/* Top Nav */}
@@ -245,7 +383,7 @@ export default function Home() {
             ← Home
           </a>
           <span className="text-[#1f2d3d]">|</span>
-          <span className="text-sm font-bold text-slate-100 tracking-tight">Team CheatGPT</span>
+          <span className="text-sm font-bold text-slate-100 tracking-tight">CheatGPT</span>
           <span className="hidden sm:block text-[10px] font-medium text-blue-400 bg-blue-950/50 px-2 py-0.5 rounded-full border border-blue-900">
             Powered by DealGhost
           </span>
@@ -269,6 +407,7 @@ export default function Home() {
               setUserMessageCount(0);
               setReadyForProposal(false);
               setFeaturesConfirmed(false);
+              setStayReadyForProposal(false);
               setCustomerEmail(null);
               setIsSubmittingEmail(false);
             }}
@@ -305,7 +444,26 @@ export default function Home() {
             onEmailSubmit={handleEmailSubmit}
             isSubmittingEmail={isSubmittingEmail}
             showProposalButton={readyForProposal && !featuresConfirmed && !customerEmail}
-            onConfirmFeatures={() => setFeaturesConfirmed(true)}
+            onConfirmFeatures={() => {
+              setFeaturesConfirmed(true);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: 'assistant' as const,
+                  content: "On it! 🚀 Just drop your email below and I'll send the full proposal straight to your inbox — usually within 24 hours.",
+                },
+              ]);
+            }}
+            onAddMoreDetails={() => {
+              setReadyForProposal(false);
+              setFeaturesConfirmed(false);
+              setStayReadyForProposal(true);
+            }}
+            history={history}
+            onLoadHistory={loadHistorySession}
+            onClearHistory={clearHistory}
+            onDeleteHistory={deleteHistoryEntry}
+            currentConversationId={conversationId}
           />
         </ResizablePanel>
 

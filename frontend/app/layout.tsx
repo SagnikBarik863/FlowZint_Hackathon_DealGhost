@@ -6,7 +6,7 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Team CheatGPT — Custom Software Development Studio',
+  title: 'CheatGPT — Custom Software Development Studio',
   description:
     'We build web apps, mobile apps, SaaS platforms, and marketplaces. AI-powered scoping, senior engineers, and proposals you can actually trust.',
 };

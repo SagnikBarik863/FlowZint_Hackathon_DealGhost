@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 function auth(req: NextRequest) {
-  return req.headers.get('x-admin-password') === 'CheatGPT@435';
+  return req.headers.get('x-admin-password') === '123456';
 }
 
 export async function GET(req: NextRequest) {

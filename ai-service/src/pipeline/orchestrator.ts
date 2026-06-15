@@ -16,8 +16,8 @@ export interface PipelineInput {
   latestMessage: string
   conversationHistory: string
   currentState: ProjectRequirementState
-  /** Last question the bot asked — passed to L4 to prevent repetition */
-  lastBotQuestion?: string
+  /** Last 3 bot questions — passed to L4 to prevent repeating recently asked topics */
+  recentBotQuestions?: string[]
 }
 
 export interface PipelineOutput {
@@ -79,11 +79,22 @@ export async function runFullPipeline(input: PipelineInput): Promise<PipelineOut
   }
 
   // ── Step 6: L4 Discovery Question (Sonnet) ─────────────────────────────────
+  // If the message looks like a question but L1 missed it, force "questioning"
+  // so L4's mandatory answer_question strategy fires correctly.
+  const QUESTION_WORDS = /^(should|what|how|can|do|is|which|why|will|when|where|are|could|would|does|did|has|have)\b/i
+  const looksLikeQuestion =
+    latestMessage.trim().endsWith('?') || QUESTION_WORDS.test(latestMessage.trim())
+  const l1ForL4 =
+    l1.semanticIntent !== 'questioning' && looksLikeQuestion
+      ? { ...l1, semanticIntent: 'questioning' as const }
+      : l1
+
   const l4 = await runL4Discovery({
     state: updatedState,
-    l1Understanding: l1,
+    l1Understanding: l1ForL4,
     conversationHistory,
-    lastBotQuestion: input.lastBotQuestion,
+    latestMessage,
+    recentBotQuestions: input.recentBotQuestions,
   })
 
   const readyForProposal = l4.readyForSummary || updatedState.completenessScore >= 80
@@ -179,17 +190,36 @@ function applyL1ToState(
 /**
  * Infer projectType from available state signals.
  * Only called when projectType is null — avoids overwriting explicit values.
+ *
+ * Key rules:
+ * - "shopping_cart" is the clearest e-commerce signal — restaurant/booking apps never have carts
+ * - "product_catalog" alone is too weak (menus, service listings, and real products all map to it)
+ * - "payment_processing" alone is far too weak (nearly every app takes payments)
+ * - Domain hints from L1 keyDiscoveries are used to block false-positive e-commerce classifications
  */
 function inferProjectType(state: ProjectRequirementState): ProjectRequirementState {
   let inferred: CanonicalProjectType | null = null
 
   const featureIds = new Set(state.features.map((f) => f.canonicalId))
-  const hasMobile = state.platforms.some((p) =>
-    p.toLowerCase().includes('ios') || p.toLowerCase().includes('android') || p.toLowerCase().includes('mobile')
-  )
-  const hasWeb = state.platforms.some((p) =>
-    p.toLowerCase().includes('web') || p.toLowerCase().includes('browser')
-  )
+  const hasMobile = state.platforms.some((p) => /ios|android|mobile/i.test(p))
+  const hasWeb = state.platforms.some((p) => /web|browser/i.test(p))
+
+  // L1 stores domain as "Domain: <string>" in keyDiscoveries — use it to block false positives
+  const detectedDomain = state.keyDiscoveries
+    .filter((d) => d.startsWith('Domain:'))
+    .join(' ')
+    .toLowerCase()
+  const isFoodOrServiceDomain =
+    /restaurant|cafe|caf|food|dining|catering|hotel|hospitality|salon|barber|clinic|spa|gym|fitness|beauty/i.test(
+      detectedDomain
+    )
+
+  // True e-commerce signals: shopping_cart = explicit browse-and-purchase UX.
+  // product_catalog + inventory_management together also signals an online store.
+  // payment_processing alone is NOT sufficient — restaurants, booking apps, SaaS tools all take payments.
+  const hasEcommerceSignal =
+    featureIds.has('shopping_cart') ||
+    (featureIds.has('product_catalog') && featureIds.has('inventory_management'))
 
   if (state.businessModel === 'marketplace') {
     inferred = 'marketplace'
@@ -200,14 +230,10 @@ function inferProjectType(state: ProjectRequirementState): ProjectRequirementSta
     (featureIds.has('admin_panel') || featureIds.has('role_based_access_control') || featureIds.has('analytics_dashboard'))
   ) {
     inferred = 'saas_platform'
-  } else if (
-    featureIds.has('product_catalog') ||
-    featureIds.has('shopping_cart') ||
-    featureIds.has('payment_processing')
-  ) {
+  } else if (hasEcommerceSignal && !isFoodOrServiceDomain) {
     inferred = 'e_commerce'
   } else if (state.platforms.length > 0 || state.features.length >= 3) {
-    inferred = 'web_app' // most common default when we have enough signal
+    inferred = 'web_app'
   }
 
   if (!inferred) return state

@@ -6,7 +6,7 @@
  */
 
 export function buildUnderstandingSystemPrompt(): string {
-  return `You are the Semantic Understanding layer of DEALGHOST, the AI pre-sales system for Team CheatGPT software agency.
+  return `You are the Semantic Understanding layer of DEALGHOST, the AI pre-sales system for CheatGPT software agency.
 
 Your job: understand the INTENT and MEANING of a client's latest message in context — before deep requirement extraction.
 
@@ -36,7 +36,7 @@ Budget detection in Indian units:
 - removing     : client is taking something off the table ("scratch that", "we don't need X")
 - clarifying   : client is explaining the meaning of something already mentioned
 - elaborating  : client is adding depth/detail to something already in state
-- questioning  : client is asking a question (about scope, process, timeline, pricing)
+- questioning  : client is asking ANY question or seeking advice/recommendation — "Should I use X or Y?", "What's the difference between X and Y?", "Which is better?", "Can you explain X?", "Do I need X?", "How does X work?", "What would you recommend?" — includes tech stack questions, architecture questions, cost/timeline questions, or anything phrased as a question
 - done         : client signals they want to wrap up ("that's everything", "sounds good")
 - confirming   : client explicitly agrees with a summary or assumption
 
@@ -82,5 +82,6 @@ Classify this message. Note:
 - Look for corrections (new info contradicts current state)
 - Look for elaborations (adds detail to something already mentioned)
 - Look for budget mentions in lakhs or crores
-- Whether this closes discovery ("done") or continues it`
+- Whether this closes discovery ("done") or continues it
+- IMPORTANT: if the message is phrased as a question or asks for advice/recommendation (even technical ones like "Should I use React Native or Flutter?" or "What's the difference between X and Y?"), classify as "questioning" — not "adding"`
 }

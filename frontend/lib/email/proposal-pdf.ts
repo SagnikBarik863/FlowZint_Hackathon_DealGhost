@@ -52,7 +52,7 @@ export async function generateProposalPdf(
     // ── Header band ──────────────────────────────────────────────────────────
 
     doc.rect(0, 0, pageW, 75).fill('#0d1117');
-    doc.fontSize(20).font('Helvetica-Bold').fillColor('#ffffff').text('Team CheatGPT', 50, 18);
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#ffffff').text('CheatGPT', 50, 18);
     doc.fontSize(10).font('Helvetica').fillColor('#93c5fd').text('Project Proposal  |  Powered by DealGhost', 50, 48);
     doc.y = 95; // skip past header band
 
@@ -70,15 +70,15 @@ export async function generateProposalPdf(
 
     sectionHeader('Scope');
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#374151').text('Included:');
-    proposal.scope.included.forEach((s) => bullet(s));
+    (proposal.scope?.included ?? []).forEach((s) => bullet(s));
     doc.moveDown(0.3);
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#374151').text('Not Included:');
-    proposal.scope.excluded.forEach((s) => bullet(s));
+    (proposal.scope?.excluded ?? []).forEach((s) => bullet(s));
 
     // ── Deliverables ─────────────────────────────────────────────────────────
 
     sectionHeader('Deliverables');
-    proposal.deliverables.forEach((d) => {
+    (proposal.deliverables ?? []).forEach((d) => {
       doc.fontSize(10).font('Helvetica-Bold').fillColor('#1f2937').text(`${d.name}  [${d.milestone}]`);
       doc.fontSize(10).font('Helvetica').fillColor('#4b5563').text(d.description, { indent: 15, lineGap: 1 });
       doc.moveDown(0.2);
@@ -86,9 +86,10 @@ export async function generateProposalPdf(
 
     // ── Timeline ─────────────────────────────────────────────────────────────
 
-    const totalWeeks = proposal.timeline.phases.reduce((s, p) => s + p.durationWeeks, 0);
+    const phases = proposal.timeline?.phases ?? [];
+    const totalWeeks = phases.reduce((s, p) => s + p.durationWeeks, 0);
     sectionHeader(`Timeline  (${totalWeeks} weeks total)`);
-    proposal.timeline.phases.forEach((p) => {
+    phases.forEach((p) => {
       bullet(`${p.name}: ${p.durationWeeks} week${p.durationWeeks !== 1 ? 's' : ''}`);
     });
 
@@ -98,7 +99,7 @@ export async function generateProposalPdf(
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#374151')
       .text(`Model: ${proposal.pricing.model.replace(/_/g, ' ')}`);
     doc.moveDown(0.2);
-    proposal.pricing.breakdown.forEach((b) => {
+    (proposal.pricing?.breakdown ?? []).forEach((b) => {
       // right-align the amount
       const label = `- ${b.item}`;
       const amount = fmtMoney(b.costUsd, cur);
@@ -132,14 +133,14 @@ export async function generateProposalPdf(
     // ── Team ─────────────────────────────────────────────────────────────────
 
     sectionHeader('Team Composition');
-    proposal.team.forEach((t) => {
+    (proposal.team ?? []).forEach((t) => {
       bullet(`${t.count}x ${t.role}  (${t.allocationPct}% allocation)`);
     });
 
     // ── Assumptions ──────────────────────────────────────────────────────────
 
     sectionHeader('Assumptions');
-    proposal.assumptions.forEach((a) => bullet(a));
+    (proposal.assumptions ?? []).forEach((a) => bullet(a));
 
     // ── Terms ────────────────────────────────────────────────────────────────
 
@@ -153,7 +154,7 @@ export async function generateProposalPdf(
       .fontSize(8.5)
       .font('Helvetica')
       .fillColor('#9ca3af')
-      .text('Team CheatGPT  |  sagnikbarik456@gmail.com  |  Powered by DealGhost', {
+      .text('CheatGPT  |  sagnikbarik456@gmail.com  |  Powered by DealGhost', {
         align: 'center',
       });
 

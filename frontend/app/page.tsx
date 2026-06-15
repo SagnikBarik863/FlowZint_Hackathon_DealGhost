@@ -63,7 +63,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-[#1f2d3d] bg-[#0d1117]/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-xl font-black tracking-tight text-slate-100">Team CheatGPT</span>
+            <span className="text-xl font-black tracking-tight text-slate-100">CheatGPT</span>
             <span className="hidden sm:block text-[10px] font-semibold text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded-full border border-blue-900/60 uppercase tracking-widest">
               Software Studio
             </span>
@@ -121,7 +121,7 @@ export default function LandingPage() {
 
           {/* Sub */}
           <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed mb-10">
-            From MVP to enterprise platform — Team CheatGPT scopes your project with AI precision,
+            From MVP to enterprise platform — CheatGPT scopes your project with AI precision,
             builds it with senior engineers, and delivers code that scales beyond launch.
           </p>
 
@@ -237,13 +237,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Why Team CheatGPT ─────────────────────────────────────────────────── */}
+      {/* ── Why CheatGPT ─────────────────────────────────────────────────── */}
       <section id="why" className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
             <div>
               <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-5">
-                Why Team CheatGPT
+                Why CheatGPT
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-100 mb-6 leading-tight">
                 We scope it right
@@ -315,7 +315,7 @@ export default function LandingPage() {
       <footer className="border-t border-[#1f2d3d] py-10 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="font-black text-slate-100 tracking-tight">Team CheatGPT</span>
+            <span className="font-black text-slate-100 tracking-tight">CheatGPT</span>
             <span className="text-slate-600 text-xs">Software Studio</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-slate-600">
@@ -325,7 +325,7 @@ export default function LandingPage() {
             <Link href="/chat"  className="hover:text-slate-400 transition-colors">Discuss Project</Link>
           </div>
           <div className="text-xs text-slate-600">
-            © 2026 Team CheatGPT · All rights reserved
+            © 2026 CheatGPT · All rights reserved
           </div>
         </div>
       </footer>

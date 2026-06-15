@@ -1,15 +1,18 @@
 import { z } from 'zod'
-import { callClaudeJSON } from '../models/claude.js'
+import { callGroqJSON, GROQ_MODEL } from '../models/groq.js'
 import { getOntologyPromptSection } from '../ontology/feature-mapper.js'
 import {
   buildExtractionSystemPrompt,
   buildExtractionUserPrompt,
   compactStateForPrompt,
 } from '../prompts/extraction.js'
-import { MODELS } from '../models/constants.js'
 import type { ExtractionResult, ProjectRequirementState } from '@dealghost/shared'
 
 // ── Zod validation schema ────────────────────────────────────────────────────
+
+// Coerces null → [] before Zod validates, so the model returning null doesn't crash
+const arr = <T extends z.ZodTypeAny>(inner: T) =>
+  z.preprocess((v) => v ?? [], z.array(inner))
 
 const FeatureSchema = z.object({
   canonicalId: z.string(),
@@ -18,13 +21,13 @@ const FeatureSchema = z.object({
   category: z.string(),
   priority: z.enum(['MUST', 'SHOULD', 'COULD']),
   isConfirmed: z.boolean(),
-  dependencies: z.array(z.string()).default([]),
+  dependencies: arr(z.string()),
 })
 
 const ExtractionResultSchema = z.object({
-  features: z.array(FeatureSchema).default([]),
-  integrations: z.array(z.string()).default([]),
-  platforms: z.array(z.string()).default([]),
+  features: arr(FeatureSchema),
+  integrations: arr(z.string()),
+  platforms: arr(z.string()),
   authRequirements: z.string().nullable().default(null),
   realtimeRequirements: z.string().nullable().default(null),
   adminPanelRequirements: z.string().nullable().default(null),
@@ -46,44 +49,39 @@ const ExtractionResultSchema = z.object({
       backend: z.string().nullish(),
       database: z.string().nullish(),
       hosting: z.string().nullish(),
-      avoid: z.array(z.string()).default([]),
-      existingSystems: z.array(z.string()).default([]),
+      avoid: arr(z.string()),
+      existingSystems: arr(z.string()),
     })
     .nullable()
     .default(null),
-  compliance: z.array(z.string()).default([]),
+  compliance: arr(z.string()),
   technicalConstraints: z.string().nullable().default(null),
-  workflows: z
-    .array(
-      z.object({
-        name: z.string(),
-        steps: z.array(z.string()),
-        actors: z.array(z.string()),
-        triggers: z.array(z.string()),
-      })
-    )
-    .default([]),
-  userRoles: z
-    .array(
-      z.object({
-        name: z.string(),
-        permissions: z.array(z.string()),
-        count: z.string().optional().nullable(),
-      })
-    )
-    .default([]),
-  featuresToRemove: z.array(z.string()).default([]),
-  assumptions: z.array(z.string()).default([]),
-  newCanonicalEntries: z
-    .array(
-      z.object({
-        id: z.string(),
-        canonicalName: z.string(),
-        category: z.string(),
-        aliases: z.array(z.string()),
-      })
-    )
-    .default([]),
+  workflows: arr(
+    z.object({
+      name: z.string(),
+      steps: arr(z.string()),
+      actors: arr(z.string()),
+      triggers: arr(z.string()),
+    })
+  ),
+  userRoles: arr(
+    z.object({
+      name: z.string(),
+      permissions: arr(z.string()),
+      count: z.string().optional().nullable(),
+    })
+  ),
+  featuresToRemove: arr(z.string()),
+  platformsToRemove: arr(z.string()),
+  assumptions: arr(z.string()),
+  newCanonicalEntries: arr(
+    z.object({
+      id: z.string(),
+      canonicalName: z.string(),
+      category: z.string(),
+      aliases: arr(z.string()),
+    })
+  ),
 })
 
 // ── Layer function ───────────────────────────────────────────────────────────
@@ -110,14 +108,13 @@ export async function runL2Extraction(input: L2Input): Promise<ExtractionResult>
     ? `${input.l1Context}\n\n${baseUserPrompt}`
     : baseUserPrompt
 
-  const result = await callClaudeJSON(
+  const result = await callGroqJSON(
     {
-      model: MODELS.L2_EXTRACTION,
+      model: GROQ_MODEL,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
       maxTokens: 2500,
-      temperature: 0.1, // low temperature for consistent structured output
-      cacheSystemPrompt: true, // ontology section cached after first call
+      temperature: 0.1,
     },
     (raw) => ExtractionResultSchema.parse(JSON.parse(raw))
   )

@@ -4,12 +4,31 @@ import { prisma } from '@/lib/prisma';
 import { generateProposal } from '@/lib/ai/proposal';
 import type { ProjectRequirementState } from '@/types/project';
 
+// 3 attempts per IP per 10 minutes
+const emailLimits = new Map<string, { count: number; resetAt: number }>();
+function checkEmailRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = emailLimits.get(ip);
+  if (!entry || now > entry.resetAt) {
+    emailLimits.set(ip, { count: 1, resetAt: now + 10 * 60 * 1000 });
+    return true;
+  }
+  if (entry.count >= 3) return false;
+  entry.count++;
+  return true;
+}
+
 const BodySchema = z.object({
   conversationId: z.string(),
   email: z.string().email(),
 });
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
+  if (!checkEmailRateLimit(ip)) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   let body: unknown;
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
@@ -29,11 +48,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
   }
 
-  // Update Lead with real email
-  await prisma.lead.update({
-    where: { id: analysis.conversation.leadId },
-    data: { email, status: 'QUALIFIED' },
-  });
+  // Update Lead with real email.
+  // If another lead already owns this email (returning user / duplicate test session),
+  // reclaim it by moving their email to a placeholder, then set it on the current lead.
+  try {
+    await prisma.lead.update({
+      where: { id: analysis.conversation.leadId },
+      data: { email, status: 'QUALIFIED' },
+    });
+  } catch (err: unknown) {
+    const isUniqueViolation =
+      typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2002';
+    if (isUniqueViolation) {
+      await prisma.lead.updateMany({
+        where: { email, NOT: { id: analysis.conversation.leadId } },
+        data: { email: `reclaimed-${Date.now()}@dealghost.internal` },
+      });
+      await prisma.lead.update({
+        where: { id: analysis.conversation.leadId },
+        data: { email, status: 'QUALIFIED' },
+      });
+    } else {
+      throw err;
+    }
+  }
 
   // Generate AI proposal
   const state = analysis.requirements as unknown as ProjectRequirementState;

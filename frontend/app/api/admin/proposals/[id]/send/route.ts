@@ -7,7 +7,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (req.headers.get('x-admin-password') !== 'CheatGPT@435') {
+  if (req.headers.get('x-admin-password') !== '123456') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { id } = await params;
@@ -35,7 +35,8 @@ export async function POST(
     await sendProposalEmail(leadEmail, content, projectName);
   } catch (err) {
     console.error('[send-proposal]', err);
-    return NextResponse.json({ error: 'Email send failed' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Email send failed';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 
   await prisma.proposal.update({

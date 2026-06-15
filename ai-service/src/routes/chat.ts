@@ -4,8 +4,21 @@ import type { ChatRequest } from '@dealghost/shared'
 import { callGroqIntent, callGroqModerate } from '../models/groq.js'
 import { runFullPipeline } from '../pipeline/orchestrator.js'
 import { formatConversationHistory } from '../state/manager.js'
-import { loadState, saveState } from '../db/redis.js'
+import { loadState, saveState, getRedis } from '../db/redis.js'
 import { prisma } from '../db/prisma.js'
+
+// 20 requests per IP per minute
+async function checkChatRateLimit(ip: string): Promise<boolean> {
+  try {
+    const redis = getRedis()
+    const key = `dealghost:rl:chat:${ip}`
+    const count = await redis.incr(key)
+    if (count === 1) await redis.expire(key, 60)
+    return count <= 20
+  } catch {
+    return true // if Redis is down, don't block requests
+  }
+}
 
 function buildRefusalMessage(category: string, contactEmail: string): string {
   const categoryLabel: Record<string, string> = {
@@ -26,6 +39,15 @@ For anything else, feel free to reach the team directly: **${contactEmail}**`
 export const chatRoute = new Hono()
 
 chatRoute.post('/', async (c) => {
+  const ip =
+    c.req.header('x-forwarded-for')?.split(',')[0].trim() ??
+    c.req.header('x-real-ip') ??
+    'unknown'
+
+  if (!(await checkChatRateLimit(ip))) {
+    return c.json({ error: 'Too many requests. Please wait a moment before sending another message.' }, 429)
+  }
+
   const body = await c.req.json<ChatRequest>()
   const { message, conversationId } = body
 
@@ -104,9 +126,82 @@ chatRoute.post('/', async (c) => {
   // ── 6. Pre-flight intent check (Groq — fast/cheap) ────────────────────────
   const intent = await callGroqIntent(message, conversationHistory)
 
-  // ── 7. Route: READY_FOR_PROPOSAL bypasses the pipeline ───────────────────
+  // ── 7a. Route: SMALL_TALK — respond warmly, skip the pipeline ───────────────
+  if (intent === 'SMALL_TALK') {
+    const isFirstMessage = recentMessages.length <= 1 // only the message we just saved
+    const responseMsg = isFirstMessage
+      ? "Hey! 👋 Doing well, thanks. I'm DealGhost — I help scope out software ideas into proper proposals.\n\nWhat are you looking to build?"
+      : "Ha, all good! 😄 You?\n\nAnyway — where were we. Anything to add or change on what we've got so far?"
+    await prisma.message.create({
+      data: { conversationId: convId, role: 'ASSISTANT', content: responseMsg },
+    })
+    return c.json({
+      conversationId: convId,
+      message: responseMsg,
+      state,
+      intent,
+      readyForProposal: false,
+    })
+  }
+
+  // ── 7b. Route: ASKING_COMPANY_INFO — describe services, skip pipeline ───────
+  if (intent === 'ASKING_COMPANY_INFO') {
+    const hasContext = recentMessages.length > 1
+    const responseMsg = hasContext
+      ? "We build software — web apps, mobile apps, SaaS platforms, marketplaces, APIs, AI features, the works. Design and cloud infra too if needed.\n\nAnyway — back to your project. Anything to add or change on what we've got so far?"
+      : "CheatGPT builds software — web apps, mobile apps, SaaS platforms, marketplaces, APIs, AI-powered products. UI/UX design and cloud infra too.\n\nMost clients come in with an idea they want to actually ship — and I help scope that out properly so there are no surprises.\n\nSo — what are you looking to build?"
+    await prisma.message.create({
+      data: { conversationId: convId, role: 'ASSISTANT', content: responseMsg },
+    })
+    return c.json({
+      conversationId: convId,
+      message: responseMsg,
+      state,
+      intent,
+      readyForProposal: false,
+    })
+  }
+
+  // ── 7c. Route: READY_FOR_PROPOSAL bypasses the pipeline ──────────────────
   if (intent === 'READY_FOR_PROPOSAL') {
-    const responseMsg = "Great — I have enough information to generate a detailed proposal. Click **Generate Proposal** when you're ready."
+    const lines: string[] = []
+
+    // Features
+    if (state.features.length > 0) {
+      lines.push(`**Here's what we've captured so far:**\n`)
+      if (state.features.length > 0) {
+        lines.push('**Features**')
+        for (const f of state.features) {
+          const name = f.canonicalId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+          lines.push(`- ${name}`)
+        }
+      }
+    }
+
+    // Platforms
+    if (state.platforms.length > 0) {
+      lines.push(`\n**Platform** — ${state.platforms.join(', ')}`)
+    }
+
+    // Budget
+    if (state.budgetRange && (state.budgetRange.min !== null || state.budgetRange.max !== null)) {
+      const { min, max, currency } = state.budgetRange
+      const budgetStr = min !== null && max !== null
+        ? `${currency} ${min.toLocaleString()} – ${max.toLocaleString()}`
+        : min !== null
+        ? `${currency} ${min.toLocaleString()}+`
+        : `Up to ${currency} ${max!.toLocaleString()}`
+      lines.push(`**Budget** — ${budgetStr}`)
+    }
+
+    // Timeline
+    if (state.timelineExpectation) {
+      lines.push(`**Timeline** — ${state.timelineExpectation}`)
+    }
+
+    const summaryBlock = lines.length > 0 ? lines.join('\n') + '\n\n' : ''
+    const responseMsg = `${summaryBlock}On it! 🚀 Just drop your email below and I'll send the full detailed proposal straight to your inbox — usually within 24 hours.`
+
     await prisma.message.create({
       data: { conversationId: convId, role: 'ASSISTANT', content: responseMsg },
     })
@@ -130,7 +225,7 @@ chatRoute.post('/', async (c) => {
     })
   } catch (pipelineErr) {
     console.error('[pipeline] runFullPipeline failed:', pipelineErr)
-    const fallback = "I'm having a moment — could you send that again? 🙏"
+    const fallback = "Hmm, something went sideways on my end — mind sending that again? 🙏"
     await prisma.message.create({
       data: { conversationId: convId, role: 'ASSISTANT', content: fallback },
     })

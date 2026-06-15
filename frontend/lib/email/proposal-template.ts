@@ -23,7 +23,7 @@ export function proposalToPlainText(proposal: ProposalContent, toEmail: string):
 Thank you for discussing your project with us. Please find your proposal below.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROJECT PROPOSAL — Team CheatGPT
+PROJECT PROPOSAL — CheatGPT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 EXECUTIVE SUMMARY
@@ -84,7 +84,7 @@ ${proposal.terms}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Reply to this email or reach us at sagnikbarik456@gmail.com
 
-Team CheatGPT
+CheatGPT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`.trim();
 }
 
@@ -104,10 +104,10 @@ export function proposalToHtml(proposal: ProposalContent, toEmail: string): stri
 </style></head>
 <body><div class="wrap">
   <div class="header">
-    <h1>👻 Team CheatGPT</h1>
+    <h1>👻 CheatGPT</h1>
     <p>Your Project Proposal</p>
   </div>
   <div class="body"><pre>${escaped}</pre></div>
-  <div class="footer">Sent via DealGhost · Team CheatGPT</div>
+  <div class="footer">Sent via DealGhost · CheatGPT</div>
 </div></body></html>`;
 }

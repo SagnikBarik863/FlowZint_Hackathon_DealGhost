@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { Send, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Send, Eye, EyeOff, Clock, Trash2 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,13 @@ import { cn } from '@/lib/utils';
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+export interface HistoryEntry {
+  id: string;
+  title: string;
+  preview: string;
+  timestamp: number;
 }
 
 interface ChatPanelProps {
@@ -31,10 +38,22 @@ interface ChatPanelProps {
   onEmailSubmit?: (email: string) => void;
   /** Shows loading state on the email submit button */
   isSubmittingEmail?: boolean;
-  /** When true shows a "Generate Proposal" button below the chat input */
+  /** When true shows inline proposal action buttons after the last bot message */
   showProposalButton?: boolean;
   /** Called when user clicks the Generate Proposal button */
   onConfirmFeatures?: () => void;
+  /** Called when user clicks "Add more details" */
+  onAddMoreDetails?: () => void;
+  /** Previous conversation history entries for the drawer */
+  history?: HistoryEntry[];
+  /** Called when user selects a history entry */
+  onLoadHistory?: (id: string) => void;
+  /** Currently active conversation id (highlighted in the list) */
+  currentConversationId?: string | null;
+  /** Called when user confirms clearing all history (except current session) */
+  onClearHistory?: () => void;
+  /** Called when user deletes a single history entry */
+  onDeleteHistory?: (id: string) => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -66,6 +85,17 @@ const mdComponents: React.ComponentProps<typeof Markdown>['components'] = {
   ),
 };
 
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? 'Yesterday' : `${days}d ago`;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ChatPanel({
@@ -82,10 +112,20 @@ export function ChatPanel({
   isSubmittingEmail = false,
   showProposalButton = false,
   onConfirmFeatures,
+  onAddMoreDetails,
+  history,
+  onLoadHistory,
+  currentConversationId,
+  onClearHistory,
+  onDeleteHistory,
 }: ChatPanelProps) {
-  const bottomRef   = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const emailRef    = useRef<HTMLInputElement>(null);
+  const bottomRef    = useRef<HTMLDivElement>(null);
+  const textareaRef  = useRef<HTMLTextAreaElement>(null);
+  const emailRef     = useRef<HTMLInputElement>(null);
+  const historyRef   = useRef<HTMLDivElement>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [confirmClearHistory, setConfirmClearHistory] = useState(false);
+  const [hoveredHistoryId, setHoveredHistoryId] = useState<string | null>(null);
 
   // Auto-scroll on new message or loading state change
   useEffect(() => {
@@ -100,6 +140,31 @@ export function ChatPanel({
     ta.style.height = Math.min(ta.scrollHeight, 128) + 'px';
   }, [input]);
 
+  // Keep focus on the textarea after a response arrives, unless in email mode
+  useEffect(() => {
+    if (!isLoading && !emailCollectionMode) {
+      textareaRef.current?.focus();
+    }
+  }, [isLoading, emailCollectionMode]);
+
+  // Close history drawer when clicking outside of it
+  useEffect(() => {
+    if (!isHistoryOpen) return;
+    // Use a timeout so the toggle click that opened the drawer doesn't
+    // immediately re-close it via the outside-click handler.
+    const timer = setTimeout(() => {
+      function handleClickOutside(e: MouseEvent) {
+        if (historyRef.current && !historyRef.current.contains(e.target as Node)) {
+          setIsHistoryOpen(false);
+          setConfirmClearHistory(false);
+        }
+      }
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [isHistoryOpen]);
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -110,7 +175,7 @@ export function ChatPanel({
   const canSend = input.trim().length > 0 && !isLoading;
 
   return (
-    <div className="flex flex-col h-full bg-[#0d1117]">
+    <div className="flex flex-col h-full bg-[#0d1117] relative">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 px-5 py-3.5 border-b border-[#1f2d3d] bg-[#080d14]/80 backdrop-blur-sm">
@@ -143,6 +208,21 @@ export function ChatPanel({
 
           {/* Right side */}
           <div className="flex items-center gap-3">
+            {/* History toggle */}
+            <button
+              onClick={() => setIsHistoryOpen((v) => !v)}
+              title="Chat history"
+              className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all border',
+                isHistoryOpen
+                  ? 'bg-[#111827] border-slate-600/50 text-slate-300'
+                  : 'border-[#1f2d3d] text-slate-500 hover:text-slate-200 hover:border-slate-600/60',
+              )}
+            >
+              <Clock size={11} />
+              <span>History</span>
+            </button>
+
             {/* Completeness score */}
             {completeness > 0 && (
               <div className={cn('text-xs font-bold tabular-nums', completenessColor(completeness))}>
@@ -169,6 +249,108 @@ export function ChatPanel({
         </div>
       </div>
 
+      {/* ── History Drawer ──────────────────────────────────────────────────── */}
+      <div
+        ref={historyRef}
+        className={cn(
+          'absolute inset-y-0 left-0 z-20 w-72 bg-[#05080d] border-r border-[#1a2535] flex flex-col shadow-2xl',
+          'transition-transform duration-200 ease-in-out',
+          isHistoryOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a2535] flex-shrink-0">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Chat History</span>
+            {(history?.length ?? 0) > 0 && (
+              <button
+                onClick={() => setConfirmClearHistory(true)}
+                title="Clear history"
+                className="w-6 h-6 flex items-center justify-center rounded text-slate-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
+
+          {/* Confirm clear */}
+          {confirmClearHistory && (
+            <div className="flex-shrink-0 mx-3 mt-3 mb-1 p-3 rounded-lg bg-red-950/20 border border-red-900/40">
+              <p className="text-[11px] text-red-300 leading-relaxed mb-2.5">
+                Delete all previous chats? The current conversation will be kept.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    onClearHistory?.();
+                    setConfirmClearHistory(false);
+                  }}
+                  className="flex-1 py-1 rounded text-[11px] font-medium bg-red-700/60 hover:bg-red-600/70 text-red-100 transition-colors"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setConfirmClearHistory(false)}
+                  className="flex-1 py-1 rounded text-[11px] font-medium bg-[#0f1724] hover:bg-[#1a2535] text-slate-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto">
+            {!history?.length ? (
+              <div className="flex flex-col items-center justify-center h-36 gap-2 px-6">
+                <Clock size={22} className="text-slate-700" />
+                <p className="text-[11px] text-slate-600 text-center leading-relaxed">
+                  No previous chats yet.<br />Start a conversation to see history here.
+                </p>
+              </div>
+            ) : (
+              <div className="py-1">
+                {history.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={cn(
+                      'relative flex items-stretch border-l-2 transition-colors hover:bg-[#0d1520]',
+                      entry.id === currentConversationId
+                        ? 'bg-blue-950/20 border-l-blue-600'
+                        : 'border-l-transparent',
+                    )}
+                    onMouseEnter={() => setHoveredHistoryId(entry.id)}
+                    onMouseLeave={() => setHoveredHistoryId(null)}
+                  >
+                    <button
+                      onClick={() => {
+                        onLoadHistory?.(entry.id);
+                        setIsHistoryOpen(false);
+                      }}
+                      className="flex-1 text-left px-4 py-3 min-w-0"
+                    >
+                      <div className="text-xs font-medium text-slate-200 truncate leading-snug">{entry.title}</div>
+                      {entry.preview && (
+                        <div className="text-[10px] text-slate-500 truncate mt-0.5">{entry.preview}</div>
+                      )}
+                      <div className="text-[10px] text-slate-700 mt-1">{formatRelativeTime(entry.timestamp)}</div>
+                    </button>
+                    {hoveredHistoryId === entry.id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteHistory?.(entry.id);
+                        }}
+                        title="Delete chat"
+                        className="flex-shrink-0 flex items-center justify-center w-8 text-slate-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+      </div>
+
       {/* ── Messages ───────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
         {messages.map((msg, i) => (
@@ -189,7 +371,7 @@ export function ChatPanel({
             {/* Bubble */}
             <div
               className={cn(
-                'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+                'max-w-[78%] w-fit rounded-2xl px-4 py-3 text-sm leading-relaxed',
                 msg.role === 'user'
                   ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-sm shadow-lg shadow-blue-900/30'
                   : 'bg-[#0f1724] border border-[#1e2d40] text-slate-300 rounded-bl-sm shadow-[inset_2px_0_0_rgba(59,130,246,0.22)]',
@@ -229,6 +411,24 @@ export function ChatPanel({
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Inline proposal action buttons — appear below last bot message */}
+        {showProposalButton && !isLoading && (
+          <div className="flex flex-col gap-2 pl-9">
+            <button
+              onClick={onConfirmFeatures}
+              className="w-full py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white transition-all duration-200 shadow-lg shadow-blue-900/30 hover:scale-[1.01] active:scale-[0.99]"
+            >
+              ✦ Generate Proposal →
+            </button>
+            <button
+              onClick={onAddMoreDetails}
+              className="w-full py-2 rounded-xl text-xs font-medium bg-[#111827] border border-[#1f2d3d] text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all duration-200"
+            >
+              Add more details
+            </button>
           </div>
         )}
 
@@ -310,18 +510,9 @@ export function ChatPanel({
                 <Send size={14} />
               </button>
             </div>
-            {showProposalButton ? (
-              <button
-                onClick={onConfirmFeatures}
-                className="w-full mt-2 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white transition-all duration-200 shadow-lg shadow-blue-900/30 hover:scale-[1.01] active:scale-[0.99]"
-              >
-                ✦ Generate Proposal →
-              </button>
-            ) : (
-              <p className="text-[10px] text-slate-700 text-center mt-2">
-                Enter to send · Shift+Enter for new line
-              </p>
-            )}
+            <p className="text-[10px] text-slate-700 text-center mt-2">
+              Enter to send · Shift+Enter for new line
+            </p>
           </>
         )}
       </div>

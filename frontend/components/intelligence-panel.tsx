@@ -25,12 +25,12 @@ function scoreColor(score: number): string {
 function formatBudget(budgetRange: ProjectRequirementState['budgetRange']): string | null {
   if (budgetRange.raw) return budgetRange.raw;
   if (budgetRange.min != null) {
-    const curr = budgetRange.currency ?? 'USD';
-    const minStr = budgetRange.min.toLocaleString();
-    if (budgetRange.max != null) {
-      return `${curr} ${minStr} – ${budgetRange.max.toLocaleString()}`;
+    const curr = budgetRange.currency ?? 'INR';
+    const minStr = budgetRange.min.toLocaleString('en-IN');
+    if (budgetRange.max != null && budgetRange.max !== budgetRange.min) {
+      return `${curr} ${minStr} – ${budgetRange.max.toLocaleString('en-IN')}`;
     }
-    return `${curr} ${minStr}+`;
+    return `${curr} ${minStr}`;
   }
   return null;
 }
@@ -77,99 +77,38 @@ function EmptyState() {
   );
 }
 
-// ─── Lead Score Card ─────────────────────────────────────────────────────────
+// ─── Completeness Card ───────────────────────────────────────────────────────
 
-function LeadScoreCard({ state }: { state: ProjectRequirementState }) {
-  const { leadScore, inferredComplexity, completenessScore } = state;
+function CompletenessCard({ state }: { state: ProjectRequirementState }) {
+  const { inferredComplexity, completenessScore } = state;
 
   return (
     <Card className="bg-emerald-950/20 border border-emerald-900/50">
       <CardHeader>
-        <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
-          Lead Score
+        <CardTitle className="text-xs font-bold text-slate-200 uppercase tracking-widest">
+          Completeness
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {leadScore ? (
-          <>
-            {/* Score number + label */}
-            <div className="flex items-center justify-between">
-              <span className={cn('text-3xl font-bold tabular-nums', scoreColor(leadScore.score))}>
-                {leadScore.score}
-                <span className="text-sm font-normal text-slate-500">/100</span>
-              </span>
-              <Badge className={cn(
-                leadScore.score >= 70
-                  ? 'bg-emerald-900/60 text-emerald-300 border-emerald-800'
-                  : leadScore.score >= 40
-                  ? 'bg-amber-900/60 text-amber-300 border-amber-800'
-                  : 'bg-red-900/60 text-red-300 border-red-800'
-              )}>
-                {leadScore.label}
-              </Badge>
-            </div>
-
-            {/* Complexity badge */}
-            {inferredComplexity && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide">Complexity</span>
-                <Badge className={cn(
-                  inferredComplexity === 'SIMPLE' ? 'bg-emerald-900/60 text-emerald-300 border-emerald-800' :
-                  inferredComplexity === 'STANDARD' ? 'bg-blue-900/60 text-blue-300 border-blue-800' :
-                  inferredComplexity === 'COMPLEX' ? 'bg-amber-900/60 text-amber-300 border-amber-800' :
-                  'bg-red-900/60 text-red-300 border-red-800'
-                )}>
-                  {inferredComplexity}
-                </Badge>
-              </div>
-            )}
-
-            {/* Completeness progress */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide">Completeness</span>
-                <span className="text-[10px] font-semibold text-slate-400 tabular-nums">{completenessScore}%</span>
-              </div>
-              <Progress value={completenessScore} className="[&_[data-slot=progress-track]]:bg-slate-800 [&_[data-slot=progress-indicator]]:bg-emerald-500" />
-            </div>
-
-            {/* Breakdown mini bars */}
-            <div className="space-y-2 pt-1">
-              {Object.entries(leadScore.breakdown).map(([key, val]) => (
-                <div key={key}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] text-slate-500 capitalize">{camelToLabel(key)}</span>
-                    <span className="text-[10px] font-semibold text-slate-400">{val}/20</span>
-                  </div>
-                  <MiniBar value={val} max={20} colorClass="bg-emerald-500" />
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="space-y-3">
-            {/* No lead score yet — still show completeness */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide">Completeness</span>
-                <span className="text-[10px] font-semibold text-slate-400 tabular-nums">{completenessScore}%</span>
-              </div>
-              <Progress value={completenessScore} className="[&_[data-slot=progress-track]]:bg-slate-800 [&_[data-slot=progress-indicator]]:bg-emerald-500" />
-            </div>
-            {inferredComplexity && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wide">Complexity</span>
-                <Badge className={cn(
-                  inferredComplexity === 'SIMPLE' ? 'bg-emerald-900/60 text-emerald-300 border-emerald-800' :
-                  inferredComplexity === 'STANDARD' ? 'bg-blue-900/60 text-blue-300 border-blue-800' :
-                  inferredComplexity === 'COMPLEX' ? 'bg-amber-900/60 text-amber-300 border-amber-800' :
-                  'bg-red-900/60 text-red-300 border-red-800'
-                )}>
-                  {inferredComplexity}
-                </Badge>
-              </div>
-            )}
-            <p className="text-xs text-slate-600">Score will appear as more data is gathered.</p>
+      <CardContent className="space-y-3">
+        <div className="space-y-1">
+          <div className="flex justify-between items-center">
+            <span className={cn('text-2xl font-bold tabular-nums', scoreColor(completenessScore))}>
+              {completenessScore}%
+            </span>
+          </div>
+          <Progress value={completenessScore} className="[&_[data-slot=progress-track]]:bg-slate-800 [&_[data-slot=progress-indicator]]:bg-emerald-500" />
+        </div>
+        {inferredComplexity && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-500 uppercase tracking-wide">Complexity</span>
+            <Badge className={cn(
+              inferredComplexity === 'SIMPLE' ? 'bg-emerald-900/60 text-emerald-300 border-emerald-800' :
+              inferredComplexity === 'STANDARD' ? 'bg-blue-900/60 text-blue-300 border-blue-800' :
+              inferredComplexity === 'COMPLEX' ? 'bg-amber-900/60 text-amber-300 border-amber-800' :
+              'bg-red-900/60 text-red-300 border-red-800'
+            )}>
+              {inferredComplexity}
+            </Badge>
           </div>
         )}
       </CardContent>
@@ -344,10 +283,9 @@ function MissingInfoCard({ state }: { state: ProjectRequirementState }) {
 function OverviewTab({ state }: { state: ProjectRequirementState }) {
   return (
     <div className="space-y-4">
-      <LeadScoreCard state={state} />
+      <CompletenessCard state={state} />
       <ProjectDetailsCard state={state} />
       <QualificationCard state={state} />
-      <MissingInfoCard state={state} />
     </div>
   );
 }
@@ -355,9 +293,18 @@ function OverviewTab({ state }: { state: ProjectRequirementState }) {
 // ─── Features Tab ─────────────────────────────────────────────────────────────
 
 function FeaturesTab({ state }: { state: ProjectRequirementState }) {
-  const { features } = state;
+  const { features, clientTechPreferences: tech } = state;
 
-  if (features.length === 0) {
+  const techEntries: { label: string; value: string }[] = [];
+  if (tech) {
+    if (tech.frontend)  techEntries.push({ label: 'Frontend', value: tech.frontend });
+    if (tech.backend)   techEntries.push({ label: 'Backend',  value: tech.backend });
+    if (tech.database)  techEntries.push({ label: 'Database', value: tech.database });
+    if (tech.hosting)   techEntries.push({ label: 'Hosting',  value: tech.hosting });
+    tech.existingSystems?.forEach(s => techEntries.push({ label: 'Existing', value: s }));
+  }
+
+  if (features.length === 0 && techEntries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <span className="text-3xl mb-3">📋</span>
@@ -369,6 +316,40 @@ function FeaturesTab({ state }: { state: ProjectRequirementState }) {
 
   return (
     <div className="space-y-2">
+      {/* Tech preferences — client-specified tools */}
+      {techEntries.length > 0 && (
+        <>
+          {techEntries.map((entry, i) => (
+            <Card key={`tech-${i}`} className="bg-[#0d1f35] border border-blue-900/40">
+              <CardContent className="py-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="flex-shrink-0 text-[10px] bg-blue-900/60 text-blue-300 border-blue-800">
+                    CLIENT CHOICE
+                  </Badge>
+                  <p className="text-xs font-medium text-slate-200 min-w-0">
+                    {entry.value}
+                    <span className="text-slate-500 font-normal ml-1">({entry.label})</span>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {tech?.avoid && tech.avoid.length > 0 && tech.avoid.map((t, i) => (
+            <Card key={`avoid-${i}`} className="bg-[#1a0d0d] border border-red-900/40">
+              <CardContent className="py-3">
+                <div className="flex items-center gap-2">
+                  <Badge className="flex-shrink-0 text-[10px] bg-red-900/60 text-red-300 border-red-800">
+                    AVOID
+                  </Badge>
+                  <p className="text-xs font-medium text-slate-200 min-w-0">{t}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {features.length > 0 && <div className="border-t border-slate-800/60 pt-1" />}
+        </>
+      )}
+
       {features.map((feature, i) => (
         <Card key={i} className="bg-[#111827] border border-[#1f2d3d]">
           <CardContent className="py-3">
@@ -381,14 +362,9 @@ function FeaturesTab({ state }: { state: ProjectRequirementState }) {
               )}>
                 {feature.priority}
               </Badge>
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-slate-200 capitalize">
-                  {feature.canonicalId.replace(/_/g, ' ')}
-                </p>
-                {feature.rawText && (
-                  <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{feature.rawText}</p>
-                )}
-              </div>
+              <p className="text-xs font-medium text-slate-200 capitalize min-w-0">
+                {(feature.canonicalName ?? feature.canonicalId).replace(/_/g, ' ')}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -474,9 +450,6 @@ export function IntelligencePanel({ state }: IntelligencePanelProps) {
                     <span className="ml-1 text-[10px] text-slate-400">({state.features.length})</span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="proposal" className="flex-1 text-xs">
-                  Proposal
-                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -497,9 +470,6 @@ export function IntelligencePanel({ state }: IntelligencePanelProps) {
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="proposal" className="flex-1 overflow-hidden">
-              <ProposalTab state={state} />
-            </TabsContent>
           </Tabs>
         )}
       </div>

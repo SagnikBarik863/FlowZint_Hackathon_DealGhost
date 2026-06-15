@@ -31,8 +31,28 @@ Extract ALL software requirements from the client's latest message. Map every fe
 - Do not skip anything — it is better to over-extract than under-extract
 - If the client says "like Uber but for tutors" → extract: booking_system, user_auth, payment_processing, rating_system, geolocation_services, maps_integration
 - featuresToRemove: add canonical IDs here if the client is explicitly removing something previously mentioned
+- platformsToRemove: add platforms here if the client is explicitly removing one (e.g. "actually just web, not mobile" → platformsToRemove: ["mobile"])
 - Extract tech preferences if the client mentions specific technologies they want or want to avoid
 - Extract workflows if the client describes how a business process works step by step
+
+## CORRECTION RULES — when the client corrects or updates a previously stated value
+- Budget correction: extract the NEW value in budgetRange (the old one is in CURRENT KNOWN STATE — replace it, don't keep both)
+- Timeline correction: extract the NEW value in timelineExpectation
+- Platform correction: put the removed platform in platformsToRemove; add the new one in platforms if it's new
+- Tech preference correction: extract the new preference in clientTechPreferences (it overwrites the old)
+- Scalar field corrections (targetUsers, userScale, authRequirements, etc.): extract the new value — it will overwrite
+- NEVER include both old and new values — the client is replacing, not adding
+
+## TIMELINE EXTRACTION — always extract these into timelineExpectation
+Any mention of when the client wants to launch, finish, or deliver. Examples:
+- "launch in 2 months" → "2 months"
+- "I want it ready by July" → "by July"
+- "need it in 6 weeks" → "6 weeks"
+- "25th July deadline" → "25th July"
+- "within a year" → "1 year"
+- "ASAP" or "as soon as possible" → "ASAP"
+- "thinking to launch it in 2 months" → "2 months"
+Always populate timelineExpectation when ANY time reference is mentioned, even vague ones.
 
 ## OUTPUT FORMAT
 Return ONLY valid JSON. No explanation. No markdown fences. The JSON must match this exact shape:
@@ -55,6 +75,7 @@ Return ONLY valid JSON. No explanation. No markdown fences. The JSON must match 
   "workflows": [{ "name": string, "steps": string[], "actors": string[], "triggers": string[] }],
   "userRoles": [{ "name": string, "permissions": string[], "count": string? }],
   "featuresToRemove": string[],
+  "platformsToRemove": string[],
   "assumptions": string[],
   "newCanonicalEntries": [{ "id": string, "canonicalName": string, "category": string, "aliases": string[] }]
 }`

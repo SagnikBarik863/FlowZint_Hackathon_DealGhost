@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { callClaudeJSON } from '../models/claude.js'
+import { callGroqJSON, GROQ_MODEL } from '../models/groq.js'
 import { buildDiscoverySystemPrompt, buildDiscoveryUserPrompt } from '../prompts/discovery.js'
-import { MODELS } from '../models/constants.js'
 import type { DiscoveryResult, ProjectRequirementState, SemanticUnderstanding } from '@dealghost/shared'
 
 // ── Zod schema ────────────────────────────────────────────────────────────────
@@ -30,8 +29,9 @@ export interface L4Input {
   state: ProjectRequirementState
   l1Understanding: SemanticUnderstanding | null
   conversationHistory: string
-  /** The last question the bot asked — L4 must not repeat it */
-  lastBotQuestion?: string
+  latestMessage: string
+  /** Last 3 bot questions — L4 must not repeat any of them */
+  recentBotQuestions?: string[]
 }
 
 export async function runL4Discovery(input: L4Input): Promise<DiscoveryResult> {
@@ -40,16 +40,17 @@ export async function runL4Discovery(input: L4Input): Promise<DiscoveryResult> {
     input.state,
     input.l1Understanding,
     input.conversationHistory,
-    input.lastBotQuestion,
+    input.latestMessage,
+    input.recentBotQuestions,
   )
 
-  return callClaudeJSON(
+  return callGroqJSON(
     {
-      model: MODELS.L4_DISCOVERY,
+      model: GROQ_MODEL,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
-      maxTokens: 900,
-      temperature: 0.2, // slight creativity for varied question phrasing
+      maxTokens: 1400,
+      temperature: 0.2,
     },
     (raw) => DiscoveryResultSchema.parse(JSON.parse(raw)) as DiscoveryResult
   )

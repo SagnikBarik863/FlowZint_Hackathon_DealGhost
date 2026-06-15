@@ -82,9 +82,12 @@ export function mergeExtractionIntoState(
   if (extraction.technicalConstraints) updated.technicalConstraints = extraction.technicalConstraints
   if (extraction.clientTechPreferences) updated.clientTechPreferences = extraction.clientTechPreferences
 
-  // ── Arrays: merge + deduplicate ───────────────────────────────────────────
-  if (extraction.platforms.length > 0) {
-    updated.platforms = [...new Set([...current.platforms, ...extraction.platforms])]
+  // ── Arrays: merge + deduplicate (apply removals first) ───────────────────
+  if (extraction.platformsToRemove?.length > 0 || extraction.platforms.length > 0) {
+    const afterRemoval = current.platforms.filter(
+      (p) => !extraction.platformsToRemove?.map((r) => r.toLowerCase()).includes(p.toLowerCase())
+    )
+    updated.platforms = [...new Set([...afterRemoval, ...extraction.platforms])]
   }
   if (extraction.integrations.length > 0) {
     updated.integrations = [...new Set([...current.integrations, ...extraction.integrations])]

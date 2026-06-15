@@ -47,6 +47,7 @@ export interface ExtractionResult {
   workflows: Workflow[]
   userRoles: UserRole[]
   featuresToRemove: string[] // canonical IDs to remove from state
+  platformsToRemove: string[] // e.g. ["mobile"] when user corrects to web-only
   assumptions: string[]
   newCanonicalEntries: Array<{
     id: string

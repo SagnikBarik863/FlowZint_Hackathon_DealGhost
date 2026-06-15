@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import type { ProposalContent } from '@/types/proposal';
 
 function auth(req: NextRequest) {
-  return req.headers.get('x-admin-password') === 'CheatGPT@435';
+  return req.headers.get('x-admin-password') === '123456';
 }
 
 export async function GET(
@@ -48,4 +48,15 @@ export async function PATCH(
   });
 
   return NextResponse.json({ id: updated.id, ok: true });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  if (!auth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { id } = await params;
+
+  await prisma.proposal.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

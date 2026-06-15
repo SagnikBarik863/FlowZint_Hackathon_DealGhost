@@ -19,7 +19,7 @@ export async function sendProposalEmail(
   proposal: ProposalContent,
   projectName?: string,
 ): Promise<void> {
-  const subject = `Your Project Proposal from Team CheatGPT${projectName ? ` — ${projectName}` : ''}`;
+  const subject = `Your Project Proposal from CheatGPT${projectName ? ` — ${projectName}` : ''}`;
   const filename = projectName
     ? `proposal-${projectName.toLowerCase().replace(/\s+/g, '-')}.pdf`
     : 'proposal.pdf';
@@ -34,13 +34,13 @@ ${projectName ? `Project: ${projectName}\n` : ''}Feel free to reply to this emai
 
 Looking forward to working with you!
 
-Team CheatGPT
+CheatGPT
 sagnikbarik456@gmail.com`;
 
   const ADMIN_EMAIL = 'sagnikbarik456@gmail.com';
   const transporter = getTransporter();
   const info = await transporter.sendMail({
-    from: '"Team CheatGPT" <sagnikbarik456@gmail.com>',
+    from: '"CheatGPT" <sagnikbarik456@gmail.com>',
     to: toEmail,
     cc: toEmail !== ADMIN_EMAIL ? ADMIN_EMAIL : undefined,
     replyTo: ADMIN_EMAIL,
